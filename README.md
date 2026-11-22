@@ -8,7 +8,7 @@
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-168AC4" alt="MIT 许可证" /></a>
     <a href="https://github.com/awesome-sean/scriptable-android/stargazers"><img src="https://img.shields.io/github/stars/awesome-sean/scriptable-android?style=flat&amp;logo=github&amp;label=Star&amp;color=E7B748" alt="GitHub Stars" /></a>
   </p>
-  <p><a href="https://github.com/awesome-sean/scriptable-android/releases/download/v0.2.2/Scriptable-Android-0.2.2.apk"><strong>下载 APK · v0.2.2</strong></a> · <a href="docs/COMMUNITY_USAGE.txt">使用说明</a> · <a href="https://github.com/awesome-sean/scriptable-android/releases">版本记录</a></p>
+  <p><a href="https://github.com/awesome-sean/scriptable-android/releases/download/v0.2.3/Scriptable-Android-0.2.3.apk"><strong>下载 APK · v0.2.3</strong></a> · <a href="docs/COMMUNITY_USAGE.txt">使用说明</a> · <a href="https://github.com/awesome-sean/scriptable-android/releases">版本记录</a></p>
 </div>
 
 本项目由 **awesome-sean** 基于 **[EdenleeGitHub/scriptable-android](https://github.com/EdenleeGitHub/scriptable-android) v0.2.1** 派生并维护，在上游基础上改进界面、定时自动化、桌面小组件和更新体验。保留原作者及贡献者的版权声明，继续使用 **[MIT 许可证](LICENSE)**。
@@ -17,7 +17,7 @@
 
 ## 下载与安装
 
-适用于 **Android 8.0 及以上**。下载文件：**Scriptable-Android-0.2.2.apk**。
+适用于 **Android 8.0 及以上**。下载文件：**Scriptable-Android-0.2.3.apk**。
 
 1. 点击上方下载链接，保存 APK，无需登录 GitHub、无需解压。
 2. 打开 APK，按系统提示允许安装。
@@ -58,9 +58,9 @@
 
 ## 这次修改
 
-- 统一明亮卡片、圆角菜单及深浅色界面，更新应用图标。
-- 自动化与底栏直接切换，运行权限说明前置。
-- 优化代码换行、字号调整和可拖动的运行结果区。
+- 修复粘贴长脚本时的卡顿，长脚本自动使用轻量纯文本编辑。
+- 超过原有 1 MB 保存上限时明确提示，保留原内容。
+- 优化光标与排版计算，小组件添加失败改用中文说明。
 
 ## 开发与构建
 
