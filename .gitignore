@@ -14,6 +14,7 @@ signing.properties
 .env.*
 !.env.example
 *.apk
+!downloads/Scriptable-Community-0.2.2-dev-debug.apk
 *.aab
 *.apks
 .idea/

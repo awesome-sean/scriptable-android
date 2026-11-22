@@ -4,19 +4,21 @@
 
 - 保留上游 Git 历史、MIT 与第三方许可，补齐来源文档和 APK 内的许可入口。
 - 根据用户确认的预览重做卡片、导航、设置和原生功能页；设置集中显示版本与来源。
+- 当前卡片已替换为高度 120px、圆角 12px 的长方形，播放三角圆角加大，透明圆底保持原尺寸。
+- 仓库首页最前面提供当前测试 APK 直链，并写明文件名和安装步骤。
 - 默认 2×2 / small 小组件，修复横向弹性间隔与启动器方向尺寸。
 - 新增每天多个固定时间及固定时区的后台脚本任务、启停编辑、最近结果、权限入口、开机恢复和重复任务保护。
 - 使用原有隔离 Worker 与原生桥接在后台运行，最长 90 秒，不打开 Activity。
 - 新增本 Fork 正式 Release 检查、下载、大小/摘要/包名/版本/签名校验和系统安装交接。
 - 内置重庆大学晴天提醒示例及发布说明。
 
-验证：代码提交 `67120e38f1c3dd58ed2b430f792e99c92785ec23` 的 [GitHub Actions 构建](https://github.com/awesome-sean/scriptable-android/actions/runs/45017552517) 全部通过。
+验证：代码提交 `9d0f9080538b1ce00dc6ba1111d19c3df904fabb` 的 [GitHub Actions 构建](https://github.com/awesome-sean/scriptable-android/actions/runs/45028661820) 全部通过。
 
 - 123 项运行时测试；5 组浏览器检查，含界面、编辑器、原生桥接模拟及后台条件通知。
 - 25 项 Android/Robolectric 回归测试：自动化 6 项、上游原生回归 10 项、更新 6 项、小组件布局 3 项；0 失败、0 忽略。
 - `assembleDebug` 与 `lintDebug` 通过；APK 中全部资源与受审源码逐字节一致，许可文件完整，未打包签名密钥。
-- 调试 APK 的 SHA-256：`495ba407cf8b7ff31238f3d0016bd82ecbc27d2e75a381b0ad670a633c33c508`。
-- [调试构建与报告下载](https://github.com/awesome-sean/scriptable-android/actions/runs/45017552517/artifacts/14752810492) 是测试产物，不是正式 Release 更新源。
+- 调试 APK 的 SHA-256：`a146519e32eb6e0c5453515d7ed52253e7845b5821ebe495fc86dc68ae5aed39`。
+- [调试构建与报告下载](https://github.com/awesome-sean/scriptable-android/actions/runs/45028661820/artifacts/14756542806) 是测试产物，不是正式 Release 更新源。
 
 真机锁屏、重启、不同启动器和正式签名覆盖更新尚需验收。后续纯文档提交不改变上述构建中的应用源码。
 
