@@ -1,7 +1,7 @@
 name: Community Android build
 on:
   push:
-    branches: [feature/scheduled-automation]
+    branches: [main, feature/scheduled-automation]
   workflow_dispatch:
 permissions:
   contents: read

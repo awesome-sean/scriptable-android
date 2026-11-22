@@ -13,7 +13,7 @@
     down: '<path d="m6 9 6 6 6-6"/>',
     more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
     play: '<path d="m8 4 12 8-12 8V4Z"/>',
-    playRounded: '<path d="M8 5.6Q8 4.1 9.3 4.9L18.7 11Q20.1 12 18.7 13L9.3 19.1Q8 19.9 8 18.4Z"/>',
+    playRounded: '<path d="M7 6.7C7 4.9 8 4.3 9.5 5.2L18.5 10.7C20.1 11.5 20.1 12.5 18.5 13.3L9.5 18.8C8 19.7 7 19.1 7 17.3Z"/>',
     stop: '<rect x="5" y="5" width="14" height="14" rx="1"/>',
     globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c5 5 5 13 0 18-5-5-5-13 0-18Z"/>',
     device: '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 5h4m-3 14h2"/>',
