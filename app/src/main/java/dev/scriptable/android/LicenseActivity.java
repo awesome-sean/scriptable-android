@@ -2,7 +2,6 @@ package dev.scriptable.android;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -13,8 +12,7 @@ public final class LicenseActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state); setTitle("上游与开源许可");
         NativePage ui=new NativePage(this);ui.open("开源许可",this::finish);
-        ScrollView scroll=new ScrollView(this); TextView text=new TextView(this);
-        int pad=Math.round(20*getResources().getDisplayMetrics().density);
+        TextView text=new TextView(this);
         text.setPadding(0,0,0,0); text.setTextSize(14); text.setTextColor(ui.text);text.setTextIsSelectable(true);
         StringBuilder body=new StringBuilder();
         for(String file:new String[]{"licenses/FORK-NOTICE.txt","licenses/UPSTREAM-MIT.txt",

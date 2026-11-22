@@ -28,8 +28,10 @@ public final class AutomationScheduler extends BroadcastReceiver {
             long when=AutomationStore.next(task,System.currentTimeMillis());task.put("nextRun",when);
             if(!AutomationStore.replace(c,task))return;
             PendingIntent alarm=alarmIntent(c,task,when);
-            if(Build.VERSION.SDK_INT<31||manager.canScheduleExactAlarms())manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,alarm);
-            else manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,alarm);
+            try{
+                if(Build.VERSION.SDK_INT<31||manager.canScheduleExactAlarms())manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,alarm);
+                else manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,alarm);
+            }catch(SecurityException revoked){manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,alarm);}
         }
     }
     static void remove(Context c,String id)throws Exception {
