@@ -4,10 +4,17 @@ import json
 from pathlib import Path
 import zipfile
 import re
+import argparse
 
 project = Path(__file__).resolve().parent.parent
-version = re.search(r"versionName\s+'([^']+)'", (project/'app/build.gradle').read_text()).group(1)
-apk = project / f'dist/Scriptable-Android-{version}-release.apk'
+build_config=(project/'app/build.gradle').read_text(encoding='utf-8')
+version = re.search(r"versionName\s+'([^']+)'", build_config).group(1)
+application_id = re.search(r"applicationId\s+'([^']+)'", build_config).group(1)
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--apk',type=Path,default=project/f'dist/Scriptable-Community-{version}-release.apk')
+parser.add_argument('--report',type=Path,default=project/'dist/build-manifest.json')
+arguments=parser.parse_args()
+apk = arguments.apk.resolve()
 assets = project / 'app/src/main/assets'
 with zipfile.ZipFile(apk) as archive:
     for asset in assets.rglob('*'):
@@ -19,13 +26,14 @@ with zipfile.ZipFile(apk) as archive:
 files = sorted((project / 'app/src/main').rglob('*'))
 manifest = {
     'version': version,
-    'applicationId': 'dev.scriptable.android',
+    'applicationId': application_id,
     'minimumAndroid': '8.0 (API 26)',
     'apkSha256': hashlib.sha256(apk.read_bytes()).hexdigest(),
     'apkBytes': apk.stat().st_size,
     'assetsVerifiedAgainstSource': True,
     'sourceSha256': {str(file.relative_to(project)).replace('\\', '/'): hashlib.sha256(file.read_bytes()).hexdigest() for file in files if file.is_file()},
 }
-(project / 'dist/build-manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
+arguments.report.parent.mkdir(parents=True,exist_ok=True)
+arguments.report.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
 print('Verified final APK assets, manifest, compiled code and absence of signing secrets.')
 print('APK SHA256:', manifest['apkSha256'])

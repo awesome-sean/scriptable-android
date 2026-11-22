@@ -10,7 +10,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $projectRoot 'local.properties'))) {
     if (-not $sdkLocation) { throw '请设置 ANDROID_HOME 或创建 local.properties。' }
     Set-Content -LiteralPath (Join-Path $projectRoot 'local.properties') -Value ('sdk.dir=' + $sdkLocation.Replace('\','/')) -Encoding ascii
 }
-$signingFolder = Join-Path ([Environment]::GetFolderPath('UserProfile')) '.android\scriptable-android'
+$signingFolder = Join-Path ([Environment]::GetFolderPath('UserProfile')) '.android\scriptable-community'
 $signingConfig = Join-Path $signingFolder 'signing.properties'
 if ($env:SCRIPTABLE_SIGNING_PROPERTIES) { $signingConfig = $env:SCRIPTABLE_SIGNING_PROPERTIES }
 if ($InitializeSigning -and -not (Test-Path -LiteralPath $signingConfig)) {
@@ -38,7 +38,7 @@ try {
     $versionMatch = [regex]::Match((Get-Content -LiteralPath (Join-Path $projectRoot 'app\build.gradle') -Raw), "versionName\s+'([^']+)'")
     $appVersion = $versionMatch.Groups[1].Value
     if (-not $appVersion) { throw '无法读取应用版本。' }
-    $apkPath = Join-Path $outputDir "Scriptable-Android-$appVersion-$variant.apk"
+    $apkPath = Join-Path $outputDir "Scriptable-Community-$appVersion-$variant.apk"
     Copy-Item -LiteralPath (Join-Path $projectRoot "app\build\outputs\apk\$variant\app-$variant.apk") -Destination $apkPath
     $hash = (Get-FileHash -LiteralPath $apkPath -Algorithm SHA256).Hash.ToLowerInvariant()
     Set-Content -LiteralPath (Join-Path $outputDir 'SHA256.txt') -Value "$hash  $([IO.Path]::GetFileName($apkPath))" -Encoding ascii

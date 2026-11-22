@@ -1,6 +1,6 @@
 plugins { id 'com.android.application' }
 
-def signingFile = new File(System.getenv('SCRIPTABLE_SIGNING_PROPERTIES') ?: "${System.getProperty('user.home')}/.android/scriptable-android/signing.properties")
+def signingFile = new File(System.getenv('SCRIPTABLE_SIGNING_PROPERTIES') ?: "${System.getProperty('user.home')}/.android/scriptable-community/signing.properties")
 def signingValues = new Properties()
 if (signingFile.exists()) signingFile.withInputStream { signingValues.load(it) }
 
