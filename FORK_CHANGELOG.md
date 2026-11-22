@@ -10,6 +10,14 @@
 - 新增本 Fork 正式 Release 检查、下载、大小/摘要/包名/版本/签名校验和系统安装交接。
 - 内置重庆大学晴天提醒示例及发布说明。
 
-验证：本地 123 项运行时测试通过，浏览器 UI 与后台桥接检查通过。原生测试、lint 和调试 APK 构建由本分支 GitHub Actions 继续验证；结果以对应提交的 Actions 记录为准。真机锁屏、重启、不同启动器和正式签名覆盖更新尚需验收。
+验证：代码提交 `67120e38f1c3dd58ed2b430f792e99c92785ec23` 的 [GitHub Actions 构建](https://github.com/awesome-sean/scriptable-android/actions/runs/45017552517) 全部通过。
+
+- 123 项运行时测试；5 组浏览器检查，含界面、编辑器、原生桥接模拟及后台条件通知。
+- 25 项 Android/Robolectric 回归测试：自动化 6 项、上游原生回归 10 项、更新 6 项、小组件布局 3 项；0 失败、0 忽略。
+- `assembleDebug` 与 `lintDebug` 通过；APK 中全部资源与受审源码逐字节一致，许可文件完整，未打包签名密钥。
+- 调试 APK 的 SHA-256：`495ba407cf8b7ff31238f3d0016bd82ecbc27d2e75a381b0ad670a633c33c508`。
+- [调试构建与报告下载](https://github.com/awesome-sean/scriptable-android/actions/runs/45017552517/artifacts/14752810492) 是测试产物，不是正式 Release 更新源。
+
+真机锁屏、重启、不同启动器和正式签名覆盖更新尚需验收。后续纯文档提交不改变上述构建中的应用源码。
 
 上游修改记录见 CHANGELOG.md，上游的历史验证结果不作为本派生版的验证结果。

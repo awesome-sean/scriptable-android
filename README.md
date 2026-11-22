@@ -20,6 +20,8 @@
 
 ## 开始使用
 
+[简洁使用说明（TXT）](docs/COMMUNITY_USAGE.txt)
+
 1. 新建或导入 `.js` 脚本，先在前台运行并完成所需权限授权。
 2. 点底栏“自动化”→“新建自动化”，选择脚本、运行时间、时区和参数，打开“启用定时执行”并保存。
 3. 天气提醒使用 `notify` 参数、`Asia/Shanghai` 时区和 `00:00,09:00,11:00,15:00,19:00,23:00`。无需按手机所在国家换算时间。
@@ -45,6 +47,8 @@ npm run test:ui
 ```
 
 需要 JDK 17、Android SDK 36、Build Tools 35.0.0。GitHub Actions 会执行这些检查并保存调试 APK 和报告。调试包用于验收，不作为正式更新源。详细验证状态见 [FORK_CHANGELOG.md](FORK_CHANGELOG.md)；发布前仍需在真机验证锁屏、重启、厂商后台限制及覆盖更新。
+
+本次代码构建已通过：123 项运行时测试、全部浏览器检查、25 项原生回归、lint、APK 资源一致性校验。可查看 [成功的构建记录](https://github.com/awesome-sean/scriptable-android/actions/runs/45017552517) 或下载其 [调试 APK 与报告](https://github.com/awesome-sean/scriptable-android/actions/runs/45017552517/artifacts/14752810492)。
 
 ## 来源与许可
 
