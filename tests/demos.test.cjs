@@ -115,12 +115,6 @@ if (!isMainThread && workerData?.demoHarness) {
           return true;
         case 'widget.save': validateWidget(p.tree); assert.equal(p.scriptId, example.id); return true;
         case 'request':
-          if(example.id==='cqu-weather'){
-            assert.equal(p.url,'https://uapis.cn/api/v1/misc/weather?adcode=500106&forecast=true&lang=zh');
-            const beijing=new Date(Date.now()+8*3600000);
-            const date=new Date(Date.UTC(beijing.getUTCFullYear(),beijing.getUTCMonth(),beijing.getUTCDate()+2)).toISOString().slice(0,10);
-            return {body:JSON.stringify({adcode:'500106',forecast:[{date,weather_day:'晴',weather_night:'多云',temp_min:11,temp_max:18}]}),statusCode:200,headers:{},url:p.url,mimeType:'application/json'};
-          }
           assert.equal(p.url, 'https://jsonplaceholder.typicode.com/todos/1'); assert.equal(p.method, 'GET');
           assert.equal(p.timeoutInterval, 15); assert.equal(p.encoding, 'text');
           return { body: JSON.stringify(networkTodo), statusCode: 200, headers: { 'Content-Type': 'application/json' }, url: p.url, mimeType: 'application/json', textEncodingName: 'UTF-8' };
@@ -188,10 +182,10 @@ if (!isMainThread && workerData?.demoHarness) {
     'example-table': ['table.present'], 'example-html': ['webview.load', 'webview.evaluate', 'webview.present'],
     'example-triggers': ['notification.schedule', 'notification.schedule'], 'example-location-read': ['location.current'],
     'example-counts-read': ['calendar.list', 'event.list', 'contacts.list'], 'example-widget-parameter': ['widget.save'],
-    'example-self-read': [], 'example-shortcut-uri': [],'cqu-weather':['request','widget.save']
+    'example-self-read': [], 'example-shortcut-uri': []
   };
   test('every bundled demo has a behavioral assertion and an explicit host contract', () => {
-    assert.equal(examples.length, 21); assert.deepEqual(examples.map(item => item.id).sort(), Object.keys(expectedActions).sort());
+    assert.equal(examples.length, 20); assert.deepEqual(examples.map(item => item.id).sort(), Object.keys(expectedActions).sort());
   });
   for (const example of examples) test('bundled demo completes: ' + example.name, async () => {
     const result = await runExample(example);
@@ -201,11 +195,6 @@ if (!isMainThread && workerData?.demoHarness) {
     assert.equal(result.messages.filter(message => message.type === 'log' && message.level === 'error').length, 0);
     const output = logs(result), widgets = result.messages.filter(message => message.type === 'widget');
     switch (example.id) {
-      case 'cqu-weather': {
-        assert.equal(result.notifications.length,0);
-        const tree=widgets[0].tree,flat=[];const visit=n=>{if(n.text)flat.push(n.text);for(const c of n.children||[])visit(c);};visit(tree);
-        assert.ok(flat.includes('重庆大学'));assert.ok(flat.includes('晴'));assert.ok(flat.includes('建议预约'));assert.equal(tree.backgroundColor,'#265A50');break;
-      }
       case 'example-hello': assert.deepEqual(output, [['你好，测试者！'], ['你的第一个 JavaScript 脚本运行成功。']]); break;
       case 'example-device':
         assert.deepEqual(result.syncOperations.map(item => item.action), ['device.battery', 'device.battery', 'date.format']);

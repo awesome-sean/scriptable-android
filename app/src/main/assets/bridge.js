@@ -49,6 +49,18 @@
     if (action === 'runtime.cancel'||action==='runtime.finish') { window.PresentationBrowser?.cancel(payload.runId);for(const overlay of document.querySelectorAll('.native-alert-overlay'))overlay.remove();if(action==='runtime.cancel')speechSynthesis.cancel(); return true; }
     if (['bootstrap','repo.list','repo.save','repo.delete','settings.get','settings.set'].includes(action)) return browserSync(action,payload);
     const state = read();
+    if(action.startsWith('automation.')){
+      state.automations ||= [];
+      if(action==='automation.list')return {tasks:state.automations,permissions:{notifications:false,exact:false},preview:true};
+      if(action==='automation.save'){
+        const task={...payload,id:payload.id||('task-'+Date.now().toString(36)),lastState:'未运行'};
+        if(!state.scripts.some(x=>x.id===task.scriptId))throw new Error('请先选择脚本');
+        const index=state.automations.findIndex(x=>x.id===task.id);if(index>=0)state.automations[index]=task;else state.automations.push(task);write(state);return task;
+      }
+      if(action==='automation.remove'){state.automations=state.automations.filter(x=>x.id!==payload.id);write(state);return true;}
+      if(action==='automation.run')return {preview:true,message:'浏览器预览不执行后台脚本；安装 APK 后可运行'};
+      if(action==='automation.settings')return {preview:true};
+    }
     if (action === 'file.op') {
       const path = safePath(payload.path);
       const dest = payload.destination ? safePath(payload.destination) : null;

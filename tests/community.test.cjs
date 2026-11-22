@@ -21,9 +21,16 @@ let browser;
   });assert.equal(geometry.circle,geometry.left);assert.ok(Math.abs(geometry.icon-29.4)<.02);assert.equal(geometry.color,'rgb(255, 255, 255)');
   await page.locator('#explore-examples').click();assert.ok(await page.locator('.example-card').count()>4);
   await page.locator('[data-page-action="settings"]').click();await page.locator('#check-update').waitFor();
-  await page.locator('#check-update').click();assert.match(await page.locator('#toast').textContent(),/Android/);
+  await page.locator('#check-update').click();await page.locator('.update-page').waitFor();await page.locator('[data-page-action="back-settings"]').click();
   await page.locator('#show-about').click();assert.match(await page.getByRole('dialog').textContent(),/EdenleeGitHub/);await page.locator('#modal-close').click();
   await page.locator('[data-page-action="back"]').click();
+  await page.locator('[data-tab="automation"]').click();await page.locator('#new-automation').click();
+  await page.locator('#task-name').fill('每日整理');await page.locator('#task-times').fill('09:00,18:00');await page.locator('#task-enabled').check();await page.locator('.automation-save').click();await page.locator('.automation-card').waitFor();
+  assert.equal(await page.locator('[data-tab="automation"]').getAttribute('aria-current'),'page');
+  assert.equal(await page.locator('.automation-page').count(),1);assert.equal(await page.locator('[role="dialog"]').count(),0);
+  const ordering=await page.evaluate(()=>({permission:document.querySelector('.automation-permissions').getBoundingClientRect().top,task:document.querySelector('.automation-card').getBoundingClientRect().top}));assert.ok(ordering.permission<ordering.task);
+  await page.locator('[data-edit]').click();await page.locator('#task-times').fill('09:00,09:00');await page.locator('.automation-save').click();assert.match(await page.locator('#task-error').textContent(),/不重复/);
+  await page.locator('#delete-automation').click();await page.locator('#confirm-task-delete').click();await page.locator('.automation-empty').waitFor();await page.locator('[data-tab="scripts"]').click();
   for(const width of [320,360,390,768]){
     await page.setViewportSize({width,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   }
@@ -41,7 +48,7 @@ let browser;
     };
   });
   await headless.goto(base+'/headless.html');await headless.waitForFunction(()=>typeof __runScheduledScript==='function');
-  await headless.evaluate(()=>__runScheduledScript({id:'scheduled-test',name:'后台任务',code:'if(!config.runsInAutomation||config.runsInWidget||config.runsInApp)throw new Error("错误上下文"); if(args.shortcutParameter!=="notify")throw new Error("参数丢失");const r=new Request("https://example.com");if((await r.loadJSON()).ok){const n=new Notification();n.title="条件成立";await n.schedule();}Script.setShortcutOutput("已检查并通知");'},'notify'));
+  await headless.evaluate(()=>__runScheduledScript({id:'scheduled-test',name:'后台任务',code:'if(!config.runsInAutomation||config.runsInWidget||config.runsInApp)throw new Error("错误上下文"); if(args.shortcutParameter!=="daily")throw new Error("参数丢失");const r=new Request("https://example.com");if((await r.loadJSON()).ok){const n=new Notification();n.title="条件成立";await n.schedule();}Script.setShortcutOutput("已检查并通知");'},'daily'));
   assert.deepEqual(await headless.evaluate(()=>results.at(-1)),{ok:true,output:'已检查并通知'});
   assert.equal(await headless.evaluate(()=>operations.filter(x=>x.action==='notification.schedule').length),1);
   await headless.evaluate(()=>__runScheduledScript({id:'scheduled-false',name:'不通知',code:'const r=new Request("https://example.com");if(!(await r.loadJSON()).ok){const n=new Notification();await n.schedule();}console.log("条件未满足，不通知");'},'notify'));

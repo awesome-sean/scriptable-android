@@ -3,6 +3,7 @@
   const paths = {
     code: '<path d="m8 6-6 6 6 6m8-12 6 6-6 6m-3-15-2 18"/>',
     grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    shield: '<path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z"/><path d="m8 12 3 3 5-6"/>',
     spark: '<path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3L12 3Z"/><path d="m20 2 .7 2.3L23 5l-2.3.7L20 8l-.7-2.3L17 5l2.3-.7L20 2Z"/>',
     book: '<path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1m0-15c3-2 6-2 9-1v15c-3-1-6-1-9 1V5Z"/><path d="M6 8h3m6 0h3M6 12h3m6 0h3"/>',
     settings: '<path d="m9 3-.8 2.3-2 .8L4 5.4 2 9l1.8 1.6v2.8L2 15l2 3.6 2.2-.7 2 .8L9 21h4l.8-2.3 2-.8 2.2.7 2-3.6-1.8-1.6v-2.8L20 9l-2-3.6-2.2.7-2-.8L13 3H9Z"/><circle cx="11" cy="12" r="3"/>',
@@ -46,7 +47,7 @@
   };
   const colors = ['#6370ee', '#46a6bd', '#ed9461', '#af80d7', '#71ac87', '#df7e99', '#668bc6', '#ad9b60'];
   const scriptIcons = ['code', 'globe', 'device', 'folder', 'cloud', 'note', 'clipboard', 'terminal', 'sun', 'bell', 'heart', 'bolt', 'calendar', 'layers', 'widget', 'lock', 'spark', 'book', 'moon', 'settings', 'grid'];
-  const state = { tab: 'scripts', scripts: [], examples: [], docs: [], settings: { theme: 'auto', fontSize: 13 }, device: {}, query: '', sort: 'updated', currentId: null, runId: null, runState: 'idle', logs: [], widget: null, preview: null, outputTab: 'console', outputOpen: false, saveTimer: null, toastTimer: null };
+  const state = { tab: 'scripts', scripts: [], examples: [], docs: [], settings: { theme: 'auto', fontSize: 13 }, device: {}, query: '', sort: 'updated', currentId: null, runId: null, runState: 'idle', logs: [], widget: null, preview: null, outputTab: 'console', outputOpen: false, outputHeight: null, saveTimer: null, toastTimer: null };
   const main = document.getElementById('main');
   const nav = document.getElementById('bottom-nav');
   const modalRoot = document.getElementById('modal-root');
@@ -80,27 +81,23 @@
     document.documentElement.dataset.theme = state.settings.theme === 'auto' ? (themeMedia.matches ? 'dark' : 'light') : state.settings.theme;
     document.documentElement.style.setProperty('--editor-size', state.settings.fontSize + 'px');
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = document.documentElement.dataset.theme === 'dark' ? '#12171F' : '#F3F3F8';
+    if (meta) meta.content = document.documentElement.dataset.theme === 'dark' ? '#141414' : '#F3F3F8';
     if(window.Host?.isNative)Host.call('ui.theme',{dark:document.documentElement.dataset.theme==='dark'}).catch(()=>{});
   }
   themeMedia.addEventListener ? themeMedia.addEventListener('change', applySettings) : themeMedia.addListener(applySettings);
   function navRender() {
     const tabs = [['scripts','grid','脚本'], ['automation','clock','自动化'], ['docs','book','文档']];
     nav.innerHTML = tabs.map(([id,symbol,label]) => '<button class="nav-item' + (state.tab === id ? ' active' : '') + '" data-tab="' + id + '" aria-current="' + (state.tab === id ? 'page' : 'false') + '"><span class="nav-icon">' + icon(symbol) + '</span><span>' + label + '</span></button>').join('');
-    nav.querySelectorAll('[data-tab]').forEach(button => button.onclick = () => {
-      if (button.dataset.tab !== 'automation') return navigate(button.dataset.tab);
-      if (!native()) return notify('安装 Android 应用后可管理定时自动化');
-      if (!flushSave()) return;
-      hostCall('automation.open',{}).catch(error => notify(error.message));
-    });
+    nav.querySelectorAll('[data-tab]').forEach(button => button.onclick = () => navigate(button.dataset.tab));
   }
+
   function top(title) {
-    const back = state.tab === 'settings' || state.tab === 'examples';
-    return '<header class="screen-heading">' + (back ? '<button class="heading-button" data-page-action="back" aria-label="返回脚本">' + icon('back') + '</button>' : '') + '<h1>' + escape(title) + '</h1>' + (state.tab !== 'settings' ? '<button class="heading-button" data-page-action="settings" aria-label="设置">' + icon('settings') + '</button>' : '') + '</header>';
+    const back = ['settings','examples','update'].includes(state.tab);
+    return '<header class="screen-heading">' + (back ? '<button class="heading-button" data-page-action="'+(state.tab==='update'?'back-settings':'back')+'" aria-label="返回">' + icon('back') + '</button>' : '') + '<h1>' + escape(title) + '</h1>' + (!['settings','update'].includes(state.tab) ? '<button class="heading-button" data-page-action="settings" aria-label="设置">' + icon('settings') + '</button>' : '') + '</header>';
   }
   main.addEventListener('click', event => {
     const button = event.target.closest('[data-page-action]'); if (!button) return;
-    navigate(button.dataset.pageAction === 'settings' ? 'settings' : 'scripts');
+    navigate(['settings','back-settings'].includes(button.dataset.pageAction) ? 'settings' : 'scripts');
   });
   function navigate(tab) {
     if (!flushSave()) return false;
@@ -118,7 +115,18 @@
     if (state.tab === 'examples') return renderExamples();
     if (state.tab === 'docs') return renderDocs();
     if (state.tab === 'settings') return renderSettings();
+    if (state.tab === 'automation') return renderAutomation();
+    if (state.tab === 'update') return renderUpdatePreview();
     renderScripts();
+  }
+  function renderAutomation() {
+    window.AutomationUI.render({main,heading:top('自动化'),icon,escape,scripts:state.scripts,hostCall,notify,navigate});
+  }
+  window.addEventListener('app-resume',()=>{if(state.tab==='automation')window.AutomationUI.refresh();});
+  function renderUpdatePreview() {
+    main.innerHTML='<section class="page update-page">'+top('检查更新')+'<div class="update-card"><div class="update-brand"><span class="brand-mark"><img src="brand/app-icon-v2.png" alt="应用图标"></span><div><h2>Scriptable 社区版</h2><p>当前版本 0.2.2-dev</p></div></div><p class="update-state" id="update-state">检查是否有可安装的新版本。</p><button class="primary-button" id="preview-check-update">检查更新</button></div><button class="text-button" id="preview-release-page">查看发布页面 '+icon('external')+'</button><p class="automation-help">新版下载完成后会打开系统安装界面。按系统提示确认安装，应用数据会保留。</p><p class="automation-help">此页为界面预览，不会下载安装包。</p></section>';
+    document.getElementById('preview-check-update').onclick=()=>{document.getElementById('update-state').textContent='浏览器预览不连接更新服务。安装 APK 后可检查实际版本。';};
+    document.getElementById('preview-release-page').onclick=()=>notify('预览中不跳转外部页面');
   }
   function relativeTime(timestamp) {
     const diff = Math.max(0, Date.now() - timestamp);
@@ -198,7 +206,6 @@
     main.innerHTML = '<section class="page settings-page">' + top('设置') +
       '<div class="settings-group">' +
       row('sun', '主题', '', '<select id="theme-setting" aria-label="主题"><option value="auto">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select>') +
-      row('font', '编辑器字号', '', '<select id="font-setting" aria-label="编辑器字号">' + [11,12,13,14,15,16,18,20].map(n => '<option value="' + n + '">' + n + ' px</option>').join('') + '</select>') +
       row('code', '智能补全', '输入时提示 API 和变量', '<input id="completion-setting" class="setting-switch" type="checkbox" role="switch" aria-label="智能补全">') + '</div>' +
       '<div class="settings-group">' +
       row('clock', '自动化', '定时执行脚本，查看运行结果', '<button id="scheduled-scripts">管理</button>') +
@@ -212,10 +219,10 @@
       row('book', '支持范围', '', '<button id="show-limits">查看</button>') +
       row('download', '检查更新', '下载并安装最新版本', '<button id="check-update">检查</button>') +
       row('code', '关于', '版本、来源与开源许可', '<button id="show-about">查看</button>') + '</div></section>';
-    for (const [id, action, success] of [['check-update','update.open',''], ['scheduled-scripts','automation.open',''], ['cloud-connect','cloud.configure','云目录已更新'], ['cloud-sync','cloud.sync','同步完成'], ['widget-refresh','widget.refresh','小组件已刷新'], ['alarm-settings','alarm.settings','已打开定时设置']]) {
+    for (const [id, action, success] of [['check-update','update.open',''], ['cloud-connect','cloud.configure','云目录已更新'], ['cloud-sync','cloud.sync','同步完成'], ['widget-refresh','widget.refresh','小组件已刷新'], ['alarm-settings','alarm.settings','已打开定时设置']]) {
       const button = document.getElementById(id);
       button.onclick = async () => {
-        if (!native()) return notify('安装 Android 应用后即可使用此功能');
+        if (!native()) {if(action==='update.open')return navigate('update');return notify('安装 Android 应用后即可使用此功能');}
         button.disabled = true;
         try { const result = await hostCall(action, {}); if (success && !result?.cancelled) notify(result?.message || success); }
         catch (error) { notify(error.message || '操作未完成，请重试'); }
@@ -223,12 +230,11 @@
       };
     }
     document.getElementById('theme-setting').value = state.settings.theme;
-    document.getElementById('font-setting').value = String(state.settings.fontSize);
     const toggle = document.getElementById('completion-setting'); toggle.checked = completionEnabled;
     toggle.onchange = () => { completionEnabled = toggle.checked; try { localStorage.setItem('scriptable-editor-completion-v2', completionEnabled ? 'on' : 'off'); } catch (_) {} if (!completionEnabled) hideCompletion(); };
     document.getElementById('theme-setting').onchange = event => setSettings({theme:event.target.value});
-    document.getElementById('font-setting').onchange = event => setSettings({fontSize:Number(event.target.value)});
     document.getElementById('settings-import').onclick = importScript;
+    document.getElementById('scheduled-scripts').onclick = () => navigate('automation');
     document.getElementById('show-limits').onclick = () => navigate('docs');
     document.getElementById('show-about').onclick = () => {
       showModal('关于', '<p class="modal-copy">Scriptable Android 社区版<br>0.2.2-dev<br><br>由 awesome-sean 基于 EdenleeGitHub/scriptable-android v0.2.1 修改，非上游官方发行版。<br>保留上游及第三方开源许可。</p>', '<button id="open-licenses" class="secondary-button">开源许可</button>');
@@ -277,9 +283,11 @@
   function renderEditor() {
     const script = getScript(state.currentId);
     if (!script) return navigate('scripts');
-    main.innerHTML = '<section class="editor-screen"><header class="editor-head"><button id="editor-back" class="editor-back" aria-label="返回脚本">' + icon('back') + '</button><div class="editor-title"><h2 id="editor-name">' + escape(script.name) + '</h2><div id="save-status" class="save-status"><span class="save-dot"></span>已自动保存</div></div><button id="editor-run" class="editor-run">' + icon('play') + '<span>运行</span></button><button id="editor-more" class="editor-more" aria-label="脚本选项">' + icon('more') + '</button></header><div class="editor-strip"><span class="script-language"><span class="js-dot"></span>JavaScript</span><span id="cursor-position">Ln 1, Col 1</span></div><div class="editor-area"><div class="line-numbers" aria-hidden="true"><div id="line-number-content" class="line-number-content"></div></div><textarea id="code-input" class="code-input" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off" wrap="off" aria-label="JavaScript 代码编辑器"></textarea></div><div class="editor-accessory" aria-label="编辑快捷工具"><button data-insert="  " aria-label="插入两个空格">⇥ Tab</button><button data-pair="()">( )</button><button data-pair="{}">{ }</button><button data-pair="[]">[ ]</button><button data-pair="&quot;&quot;">&quot; &quot;</button><button data-insert=";">;</button><button data-insert="=">=</button><button data-insert="// ">//</button><button data-insert="await ">await</button><button data-insert="console.log()">log</button></div><section id="output-panel" class="output-panel"><div class="output-header"><button id="output-toggle" class="output-toggle">' + icon('down') + '运行结果</button><span id="output-indicator" class="output-indicator"></span><span id="output-state" class="output-state"></span><div class="output-actions"><button id="output-clear">清空</button></div></div><div id="output-tabs" class="output-tabs"></div><div id="output-content" class="output-content"></div></section></section>';
+    main.innerHTML = '<section class="editor-screen"><header class="editor-head"><button id="editor-back" class="editor-back" aria-label="返回脚本">' + icon('back') + '</button><div class="editor-title"><h2 id="editor-name">' + escape(script.name) + '</h2><div id="save-status" class="save-status"><span class="save-dot"></span>已自动保存</div></div><button id="editor-run" class="editor-run">' + icon('play') + '<span>运行</span></button><button id="editor-more" class="editor-more" aria-label="脚本选项">' + icon('more') + '</button></header><div class="editor-strip"><span class="script-language"><span class="js-dot"></span>JavaScript</span><span class="wrap-indicator">自动换行</span><label class="editor-font-label" for="editor-font-setting">字号<select id="editor-font-setting" aria-label="编辑器字号">' + [11,12,13,14,15,16,18,20,22,24].map(size=>'<option value="'+size+'">'+size+' px</option>').join('') + '</select></label><span id="cursor-position" class="sr-only">Ln 1, Col 1</span></div><div class="editor-area"><div class="line-numbers" aria-hidden="true"><div id="line-number-content" class="line-number-content"></div></div><textarea id="code-input" class="code-input" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off" wrap="soft" aria-label="JavaScript 代码编辑器"></textarea></div><div class="editor-accessory" aria-label="编辑快捷工具"><button data-insert="  " aria-label="插入两个空格">⇥ Tab</button><button data-pair="()">( )</button><button data-pair="{}">{ }</button><button data-pair="[]">[ ]</button><button data-pair="&quot;&quot;">&quot; &quot;</button><button data-insert=";">;</button><button data-insert="=">=</button><button data-insert="// ">//</button><button data-insert="await ">await</button><button data-insert="console.log()">log</button></div><section id="output-panel" class="output-panel"><div id="output-resize" class="output-resize" role="separator" aria-orientation="horizontal" aria-label="调整运行结果区域高度" aria-controls="output-content" tabindex="0"><span></span></div><div class="output-header"><button id="output-toggle" class="output-toggle">' + icon('down') + '运行结果</button><span id="output-indicator" class="output-indicator"></span><span id="output-state" class="output-state"></span><div class="output-actions"><button id="output-clear">清空</button></div></div><div id="output-tabs" class="output-tabs"></div><div id="output-content" class="output-content"></div></section></section>';
     const input = document.getElementById('code-input');
     input.value = script.code;
+    const editorFont=document.getElementById('editor-font-setting');editorFont.value=String(state.settings.fontSize);
+    editorFont.onchange=()=>{setSettings({fontSize:Number(editorFont.value)});updateLineNumbers();};
     const editorArea = main.querySelector('.editor-area');
     const viewport = document.createElement('div'); viewport.className = 'code-viewport';
     const highlight = document.createElement('pre'); highlight.className = 'code-highlight'; highlight.setAttribute('aria-hidden', 'true');
@@ -309,7 +317,10 @@
     document.getElementById('output-clear').onclick = () => { state.logs = []; renderOutput(); };
     main.querySelectorAll('[data-insert]').forEach(button => { button.onpointerdown = event => event.preventDefault(); button.onclick = () => insertText(button.dataset.insert); });
     main.querySelectorAll('[data-pair]').forEach(button => { button.onpointerdown = event => event.preventDefault(); button.onclick = () => insertPair(button.dataset.pair); });
+    if (editorResizeWatcher) editorResizeWatcher.disconnect();
+    if (window.ResizeObserver) { let width=input.clientWidth;editorResizeWatcher=new ResizeObserver(()=>{if(input.clientWidth!==width){width=input.clientWidth;updateLineNumbers();}});editorResizeWatcher.observe(input); }
     updateLineNumbers();
+    setupOutputResize();
     updateRunButton();
     renderOutput();
     updateViewport();
@@ -375,13 +386,22 @@
     }
     return output + escape(value.slice(cursor)) + '\n';
   }
+  let editorResizeWatcher = null;
   function updateLineNumbers() {
     const input = document.getElementById('code-input');
     const gutter = document.getElementById('line-number-content');
     if (!input || !gutter) return;
-    gutter.textContent = Array.from({ length: input.value.split('\n').length }, (_, index) => index + 1).join('\n');
+    const style = getComputedStyle(input);
+    const width = Math.max(1,input.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight));
     const highlight = document.getElementById('code-highlight-content');
-    if (highlight) highlight.innerHTML = highlightCode(input.value);
+    if (highlight) { highlight.innerHTML = highlightCode(input.value); highlight.style.width=width+'px'; }
+    let mirror=document.querySelector('.code-measure');
+    if(!mirror){mirror=document.createElement('div');mirror.className='code-measure';mirror.setAttribute('aria-hidden','true');input.parentElement.appendChild(mirror);}
+    mirror.style.width=width+'px';mirror.style.font=style.font;mirror.style.letterSpacing=style.letterSpacing;mirror.style.tabSize=style.tabSize;
+    mirror.innerHTML=input.value.split('\n').map(line=>'<div>'+escape(line||' ')+'</div>').join('');
+    const heights=Array.from(mirror.children,element=>element.getBoundingClientRect().height);
+    gutter.innerHTML=heights.map((height,index)=>'<span style="height:'+height+'px">'+(index+1)+'</span>').join('');
+
     syncEditorScroll();
   }
   function syncEditorScroll() {
@@ -396,6 +416,7 @@
     const view = window.visualViewport, height = view && view.scale === 1 ? view.height : innerHeight;
     if (Math.abs(innerWidth - viewportWidth) > 40) { viewportWidth = innerWidth; viewportBaseline = innerHeight; }
     document.documentElement.style.setProperty('--app-height', Math.round(height) + 'px');
+    if (document.getElementById('code-input')) requestAnimationFrame(()=>{updateLineNumbers();applyOutputHeight();});
     const editing = document.activeElement?.id === 'code-input';
     if (!editing) viewportBaseline = Math.max(viewportBaseline, innerHeight);
     document.body.classList.toggle('keyboard-open', editing && height < viewportBaseline - 120);
@@ -500,10 +521,47 @@
     }
     updateRunButton(); renderOutput();
   }
+  function outputLimits(){
+    const screen=document.querySelector('.editor-screen');if(!screen)return {closed:64,max:500};
+    const fixed=['.editor-head','.editor-strip','.editor-accessory'].reduce((sum,selector)=>sum+(screen.querySelector(selector)?.getBoundingClientRect().height||0),0);
+    return {closed:64,max:Math.max(140,screen.clientHeight-fixed-80)};
+  }
+  function applyOutputHeight(tracking=false){
+    const panel=document.getElementById('output-panel'),handle=document.getElementById('output-resize');if(!panel||!handle)return;
+    const limits=outputLimits();const height=state.outputOpen?Math.min(limits.max,Math.max(tracking?limits.closed:120,state.outputHeight||260)):limits.closed;
+    panel.classList.toggle('output-closed',!state.outputOpen);panel.style.height=height+'px';
+    handle.setAttribute('aria-valuemin',String(limits.closed));handle.setAttribute('aria-valuemax',String(Math.round(limits.max)));handle.setAttribute('aria-valuenow',String(Math.round(height)));handle.setAttribute('aria-valuetext',state.outputOpen?'结果区高度 '+Math.round(height)+' 像素':'结果区已收起');
+  }
+  function setupOutputResize(){
+    const handle=document.getElementById('output-resize'),panel=document.getElementById('output-panel');let drag=null;
+    handle.onpointerdown=event=>{
+      if(event.button!==0)return;const limits=outputLimits();drag={id:event.pointerId,y:event.clientY,height:panel.getBoundingClientRect().height,moved:false,previous:state.outputOpen,limits};
+      handle.setPointerCapture(event.pointerId);panel.classList.add('output-dragging');event.preventDefault();
+    };
+    handle.onpointermove=event=>{
+      if(!drag||event.pointerId!==drag.id)return;const distance=drag.y-event.clientY;if(!drag.moved&&Math.abs(distance)<4)return;
+      if(!drag.moved){drag.moved=true;if(!state.outputOpen){state.outputOpen=true;renderOutput();}}
+      state.outputHeight=Math.max(drag.limits.closed,Math.min(drag.limits.max,drag.height+distance));applyOutputHeight(true);event.preventDefault();
+    };
+    const end=(event,cancelled=false)=>{
+      if(!drag||event.pointerId!==drag.id)return;const current=drag;drag=null;panel.classList.remove('output-dragging');
+      if(!current.moved&&!cancelled){state.outputOpen=!state.outputOpen;}
+      else if(current.moved){state.outputOpen=state.outputHeight>=110;if(state.outputOpen)state.outputHeight=Math.max(120,state.outputHeight);}
+      applyOutputHeight();if(state.outputOpen)renderOutput();if(handle.hasPointerCapture(event.pointerId))handle.releasePointerCapture(event.pointerId);
+    };
+    handle.onpointerup=event=>end(event);handle.onpointercancel=event=>end(event,true);handle.onlostpointercapture=event=>{if(drag)end(event,true);};
+    handle.onkeydown=event=>{
+      if(!['ArrowUp','ArrowDown','Home','End','Enter',' '].includes(event.key))return;event.preventDefault();const limits=outputLimits();
+      if(event.key==='Enter'||event.key===' ')state.outputOpen=!state.outputOpen;
+      else if(event.key==='Home')state.outputOpen=false;
+      else{const current=panel.getBoundingClientRect().height;state.outputHeight=event.key==='End'?limits.max:Math.max(limits.closed,Math.min(limits.max,current+(event.key==='ArrowUp'?32:-32)));state.outputOpen=state.outputHeight>=110;}
+      renderOutput();
+    };
+  }
   function renderOutput() {
     const panel = document.getElementById('output-panel');
     if (!panel) return;
-    panel.classList.toggle('output-closed', !state.outputOpen);
+    applyOutputHeight();
     const statuses = { idle: '等待运行', running: '运行中', done: '已完成', error: '运行失败', stopped: '已停止' };
     document.getElementById('output-state').textContent = statuses[state.runState] || state.runState;
     document.getElementById('output-indicator').className = 'output-indicator ' + (state.runState === 'running' ? 'running' : state.runState === 'error' ? 'error' : '');

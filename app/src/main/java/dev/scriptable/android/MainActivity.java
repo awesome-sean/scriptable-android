@@ -269,7 +269,7 @@ public final class MainActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         clipboardCache = readClipboard();
-        if (web != null) web.onResume();
+        if (web != null) {web.onResume();if(uiReady)web.evaluateJavascript("window.dispatchEvent(new Event('app-resume'))",null);}
     }
 
     @Override protected void onPause() {
@@ -401,7 +401,7 @@ public final class MainActivity extends Activity {
 
     private static boolean isUiAction(String action) {
         switch (action) {
-            case "licenses.open": case "automation.open": case "update.open": return true;
+            case "licenses.open": case "automation.open": case "update.open": case "automation.settings": return true;
             case "repo.import": case "repo.export": case "alert": case "clipboard.read": case "clipboard.write":
             case "notification.schedule": case "safari.open": case "share": case "speech": case "widget.pin": case "ui.ready": case "runtime.cancel": case "runtime.finish": case "runtime.start": return true;
             default: return false;
@@ -412,6 +412,10 @@ public final class MainActivity extends Activity {
         if(action.equals("notification.resetCurrent")){launchArgs.remove("notification");return true;}
         if(action.startsWith("notification."))return ScriptNotifications.call(this,action,payload);
         switch (action) {
+            case "automation.list":return new JSONObject().put("tasks",AutomationStore.all(this)).put("permissions",new JSONObject().put("notifications",((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).areNotificationsEnabled()).put("exact",AutomationScheduler.exact(this)));
+            case "automation.save":{JSONObject task=AutomationStore.save(this,payload);AutomationScheduler.schedule(this,task.getString("id"));return AutomationStore.find(this,task.getString("id"));}
+            case "automation.remove":AutomationScheduler.remove(this,payload.getString("id"));return true;
+            case "automation.run":AutomationScheduler.enqueue(this,AutomationStore.find(this,payload.getString("id")),true,System.currentTimeMillis());return new JSONObject().put("message","已请求后台执行，稍后刷新查看结果");
             case "bootstrap": return bootstrap();
             case "repo.list": return repository.list();
             case "repo.save": return repository.save(payload);
@@ -435,9 +439,17 @@ public final class MainActivity extends Activity {
             case "licenses.open": startActivity(new Intent(this, LicenseActivity.class)); resolve(id,true); break;
             case "automation.open": startActivity(new Intent(this, AutomationActivity.class)); resolve(id,true); break;
             case "update.open": startActivity(new Intent(this, UpdateActivity.class)); resolve(id,true); break;
+            case "automation.settings":{
+                String kind=payload.optString("kind");
+                if("notifications".equals(kind))startActivity(new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getPackageName()));
+                else if("alarm".equals(kind)&&Build.VERSION.SDK_INT>=31)startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,Uri.parse("package:"+getPackageName())));
+                else startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName())));
+                resolve(id,true);break;
+            }
             case "ui.ready": uiReady = true; dispatchOpenScript(); resolve(id, true); break;
             case "ui.theme":{
-                boolean dark=payload.optBoolean("dark");int color=dark?0xFF12171F:0xFFF3F3F8;
+                boolean dark=payload.optBoolean("dark");int color=dark?0xFF141414:0xFFF3F3F8;
+                getSharedPreferences("ui-appearance",MODE_PRIVATE).edit().putBoolean("dark",dark).apply();
                 if(web.getParent() instanceof android.view.View)((android.view.View)web.getParent()).setBackgroundColor(color);
                 getWindow().setStatusBarColor(color);getWindow().setNavigationBarColor(color);
                 if(Build.VERSION.SDK_INT>=30){android.view.WindowInsetsController controller=getWindow().getInsetsController();if(controller!=null)controller.setSystemBarsAppearance(dark?0:android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);}

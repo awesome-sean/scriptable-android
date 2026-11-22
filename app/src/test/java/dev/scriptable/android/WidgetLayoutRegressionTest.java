@@ -20,7 +20,7 @@ public class WidgetLayoutRegressionTest {
     }
     private JSONObject text(String value,String link)throws Exception{return new JSONObject().put("type","text").put("text",value).put("url",link).put("font",new JSONObject().put("size",11));}
     @Test public void flexibleHeaderUsesFullWidthInSquareAndWideWidgets()throws Exception{
-        JSONObject row=new JSONObject().put("type","stack").put("layout","horizontal").put("children",new JSONArray().put(text("重庆大学","label")).put(new JSONObject().put("type","spacer")).put(text("11/24","date")));
+        JSONObject row=new JSONObject().put("type","stack").put("layout","horizontal").put("children",new JSONArray().put(text("项目状态","label")).put(new JSONObject().put("type","spacer")).put(text("11/24","date")));
         JSONObject tree=new JSONObject().put("type","widget").put("padding",new JSONArray().put(12).put(12).put(12).put(12)).put("children",new JSONArray().put(row));
         for(int width:new int[]{140,160,240,320}){
             WidgetRenderer.Result result=WidgetRenderer.render(tree,width,160,1);

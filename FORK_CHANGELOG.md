@@ -10,7 +10,6 @@
 - 新增每天多个固定时间及固定时区的后台脚本任务、启停编辑、最近结果、权限入口、开机恢复和重复任务保护。
 - 使用原有隔离 Worker 与原生桥接在后台运行，最长 90 秒，不打开 Activity。
 - 新增本 Fork 正式 Release 检查、下载、大小/摘要/包名/版本/签名校验和系统安装交接。
-- 内置重庆大学晴天提醒示例及发布说明。
 
 验证：代码提交 `9d0f9080538b1ce00dc6ba1111d19c3df904fabb` 的 [GitHub Actions 构建](https://github.com/awesome-sean/scriptable-android/actions/runs/45028661820) 全部通过。
 

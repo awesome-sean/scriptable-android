@@ -29,7 +29,7 @@ public final class AutomationActivity extends Activity {
         ui.button(ui.body,"＋ 新建自动化",true,v->edit(null));
         try{
             JSONArray tasks=AutomationStore.all(this);
-            if(tasks.length()==0){LinearLayout empty=ui.group();empty.addView(ui.label("还没有自动化",20,false));ui.note(empty,"选择一个脚本，设定每天的执行时间。");ui.button(empty,"使用天气提醒时间",false,v->edit(null));}
+            if(tasks.length()==0){LinearLayout empty=ui.group();empty.addView(ui.label("还没有自动化",20,false));ui.note(empty,"选择一个脚本，设定每天的执行时间。");ui.button(empty,"新建定时任务",false,v->edit(null));}
             for(int i=0;i<tasks.length();i++){
                 JSONObject task=tasks.getJSONObject(i);String id=task.getString("id"),zone=task.getString("timeZone");
                 LinearLayout group=ui.group();
@@ -63,15 +63,15 @@ public final class AutomationActivity extends Activity {
         try{
             JSONArray scripts=new ScriptRepository(this).list();
             if(scripts.length()==0){ui.note(ui.body,"请先创建或导入脚本。");ui.button(ui.body,"返回",false,v->showList());return;}
-            LinearLayout group=ui.group();EditText name=ui.field(group,"名称",existing==null?"天气预约提醒":existing.getString("name"));
+            LinearLayout group=ui.group();EditText name=ui.field(group,"名称",existing==null?"每日任务":existing.getString("name"));
             TextView label=ui.label("执行脚本",14,true);label.setPadding(0,ui.dp(16),0,ui.dp(4));group.addView(label);
             Spinner selected=new Spinner(this);List<String> names=new ArrayList<>();for(int i=0;i<scripts.length();i++)names.add(scripts.getJSONObject(i).getString("name"));
             selected.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,names){@Override public View getView(int position,View convert,ViewGroup parent){TextView view=(TextView)super.getView(position,convert,parent);view.setTextColor(ui.text);view.setTextSize(16);return view;}});selected.setMinimumHeight(ui.dp(48));selected.setContentDescription("执行脚本");group.addView(selected);
             if(existing!=null)for(int i=0;i<scripts.length();i++)if(scripts.getJSONObject(i).getString("id").equals(existing.getString("scriptId")))selected.setSelection(i);
-            EditText times=ui.field(group,"每天运行时间",existing==null?"00:00,09:00,11:00,15:00,19:00,23:00":joinTimes(existing.getJSONArray("times"),","));
+            EditText times=ui.field(group,"每天运行时间",existing==null?"09:00":joinTimes(existing.getJSONArray("times"),","));
             times.setSingleLine(false);ui.note(group,"24 小时制，用逗号分隔，例如 09:00,19:00。");
-            EditText zone=ui.field(group,"时区",existing==null?"Asia/Shanghai":existing.getString("timeZone"));ui.note(group,"Asia/Shanghai 固定按北京时间运行。");
-            EditText parameter=ui.field(group,"脚本参数",existing==null?"notify":existing.optString("parameter",""));
+            EditText zone=ui.field(group,"时区",existing==null?ZoneId.systemDefault().getId():existing.getString("timeZone"));ui.note(group,"按照所选时区安排执行时间。");
+            EditText parameter=ui.field(group,"脚本参数",existing==null?"":existing.optString("parameter",""));
             Switch enabled=new Switch(this);enabled.setText("启用定时执行");enabled.setTextColor(ui.text);enabled.setMinHeight(ui.dp(56));enabled.setChecked(existing!=null&&existing.optBoolean("enabled"));group.addView(enabled);
             ui.note(ui.body,"请先手动运行脚本并完成权限授权。后台任务不能显示弹窗或等待输入。");
             ui.button(ui.body,"保存",true,v->{try{

@@ -196,7 +196,7 @@ public final class AndroidServices {
                 if (!granted(Manifest.permission.ACCESS_COARSE_LOCATION) && !granted(Manifest.permission.ACCESS_FINE_LOCATION) && !permission(r, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION)) return;
                 if (Build.VERSION.SDK_INT < 29 || granted(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) { finish(r.id, new JSONObject().put("opened", false).put("granted", true)); break; }
                 AlertDialog dialog = new AlertDialog.Builder(activity).setTitle("桌面组件后台定位")
-                        .setMessage("在接下来的安卓权限设置中选择定位权限，再选择“始终允许”，桌面天气组件才能获取新的位置。未开启时只能使用应用最近一小时内取得的真实位置，并标记为缓存。")
+                        .setMessage("在接下来的安卓权限设置中选择定位权限，再选择“始终允许”，后台脚本与桌面小组件才能获取新的位置。未开启时只能使用应用最近一小时内取得的真实位置，并标记为缓存。")
                         .setNegativeButton("取消", (value, which) -> fail(r.id, new Exception("User cancelled background location settings")))
                         .setPositiveButton("打开设置", (value, which) -> {
                             try { activity.startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.getPackageName()))); finish(r.id, new JSONObject().put("opened", true).put("granted", false)); }

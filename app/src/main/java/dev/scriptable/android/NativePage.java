@@ -16,9 +16,11 @@ final class NativePage {
     NativePage(Activity activity) {
         this.activity=activity;
         boolean dark=(activity.getResources().getConfiguration().uiMode&Configuration.UI_MODE_NIGHT_MASK)==Configuration.UI_MODE_NIGHT_YES;
-        try {String theme=new ScriptRepository(activity).settings().optString("theme","auto");if(!"auto".equals(theme))dark="dark".equals(theme);}catch(Exception ignored){}
-        background=dark?0xFF12171F:0xFFF3F3F8;surface=dark?0xFF1B2330:0xFFFFFFFF;text=dark?0xFFEEF3FA:0xFF17191E;
-        muted=dark?0xFFAFBDCF:0xFF626771;line=dark?0xFF354156:0xFFDFE1E7;accent=dark?0xFF9DBEFF:0xFF245BBD;
+        try {String theme=new ScriptRepository(activity).settings().optString("theme","auto");if(!"auto".equals(theme))dark="dark".equals(theme);else if(activity.getSharedPreferences("ui-appearance",0).contains("dark"))dark=activity.getSharedPreferences("ui-appearance",0).getBoolean("dark",dark);}catch(Exception ignored){}
+        activity.setTheme(dark?android.R.style.Theme_Material_NoActionBar:android.R.style.Theme_Material_Light_NoActionBar);
+        background=dark?0xFF141414:0xFFF3F3F8;surface=dark?0xFF202020:0xFFFFFFFF;text=dark?0xFFF2F2F2:0xFF17191E;
+        muted=dark?0xFFB0B0B0:0xFF626771;line=dark?0xFF3A3A3A:0xFFDFE1E7;accent=dark?0xFF9DBEFF:0xFF245BBD;
+        activity.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(background));
         activity.getWindow().setStatusBarColor(background);activity.getWindow().setNavigationBarColor(background);
         activity.getWindow().getDecorView().setSystemUiVisibility(dark?0:View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
     }

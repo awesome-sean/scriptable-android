@@ -19,7 +19,7 @@ public class AutomationRegressionTest {
         c=RuntimeEnvironment.getApplication();c.getSharedPreferences("scheduled-scripts-v1",0).edit().clear().commit();
         new ScriptRepository(c).save(new JSONObject().put("id","automation-test").put("name","测试脚本").put("code","console.log('完成')").put("color","#245BBD").put("icon","code"));
     }
-    private JSONObject input()throws Exception{return new JSONObject().put("name","天气预约提醒").put("scriptId","automation-test").put("timeZone","Asia/Shanghai").put("times",new JSONArray().put("23:00").put("00:00").put("09:00")).put("parameter","notify").put("enabled",true);}
+    private JSONObject input()throws Exception{return new JSONObject().put("name","每日任务").put("scriptId","automation-test").put("timeZone","Asia/Shanghai").put("times",new JSONArray().put("23:00").put("00:00").put("09:00")).put("parameter","notify").put("enabled",true);}
     @Test public void beijingMidnightRollsAcrossUtcMonthBoundary()throws Exception{
         long value=AutomationStore.next(input(),Instant.parse("2026-11-30T15:59:59Z").toEpochMilli());
         assertEquals(Instant.parse("2026-11-30T16:00:00Z").toEpochMilli(),value);
