@@ -4,6 +4,10 @@
 
 当前开发分支：[feature/scheduled-automation](https://github.com/awesome-sean/scriptable-android/tree/feature/scheduled-automation)。版本 `0.2.2-dev`，包名 `dev.scriptable.android.community`，可与上游应用并存，两个应用的数据不自动互通。
 
+<p><img src="docs/screenshots/community-scripts.png" width="300" alt="社区版脚本页预览" /> <img src="docs/screenshots/community-settings.png" width="300" alt="社区版设置页完整预览" /></p>
+
+以上为当前代码的浏览器预览，原生权限、自动化与系统安装需在 Android 上验收。
+
 ## 这次修改
 
 - 脚本页使用明亮渐变卡片、白色文字及半透明图标底；播放三角采用圆角，大小与透明圆底分别控制。

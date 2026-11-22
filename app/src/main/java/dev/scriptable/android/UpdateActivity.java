@@ -79,7 +79,7 @@ public final class UpdateActivity extends Activity {
             try{startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+getPackageName())));}catch(Exception e){waitingPermission=false;fail(e);}return;
         }
         busy=true;action.setEnabled(false);cancel.setVisibility(android.view.View.GONE);state.setText("正在校验安装包…");
-        io.execute(()->{try{AppUpdater.prepare(this);main.post(()->{if(destroyed)return;busy=false;action.setEnabled(true);state.setText("请在系统界面确认安装");action.setText("再次打开安装");
+        io.execute(()->{try{AppUpdater.prepare(this);main.post(()->{if(destroyed)return;busy=false;action.setEnabled(true);if(!visible){state.setText("安装包已校验，返回后可继续安装");return;}state.setText("请在系统界面确认安装");action.setText("再次打开安装");
             Intent install=new Intent(Intent.ACTION_VIEW).setDataAndType(AppUpdater.installUri(this),"application/vnd.android.package-archive")
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             install.setClipData(ClipData.newRawUri("更新安装包",AppUpdater.installUri(this)));

@@ -38,7 +38,17 @@ jobs:
       - name: Build and native regression tests
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon testDebugUnitTest assembleDebug lintDebug
+          set -o pipefail
+          for attempt in 1 2 3; do
+            if ./gradlew --no-daemon --continue assembleDebug testDebugUnitTest lintDebug 2>&1 | tee /tmp/community-gradle.log; then
+              exit 0
+            fi
+            if ! rg -q 'status code 429|Too Many Requests|Read timed out|Connection reset' /tmp/community-gradle.log; then
+              exit 1
+            fi
+            if [ "$attempt" = 3 ]; then exit 1; fi
+            sleep 10
+          done
       - name: Verify APK contains the reviewed sources and license assets
         run: python3 tools/verify-apk.py --apk app/build/outputs/apk/debug/app-debug.apk --report app/build/reports/build-manifest.json
       - uses: actions/upload-artifact@v4
