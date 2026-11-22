@@ -1,1 +1,1 @@
-0a89e5a4310d4cb6ea845d17cffd539a21930b9861b59e212f522216c3d213e1  Scriptable-Community-0.2.2-dev-debug.apk
+0c0876ec6bcd4b05dea920a5c96827a1bf079f144ead249f04371bda8d5fea82  Scriptable-Android-0.2.2.apk

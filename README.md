@@ -2,6 +2,12 @@
   <img src="app/src/main/assets/brand/app-icon-v2.png" width="112" height="112" alt="Scriptable Android 图标" />
   <h1>Scriptable Android</h1>
   <p>用 JavaScript 创建脚本、桌面小组件和定时自动化。</p>
+  <p>
+    <a href="https://github.com/awesome-sean/scriptable-android/releases/latest"><img src="https://img.shields.io/github/v/release/awesome-sean/scriptable-android?label=version&amp;color=7863EA" alt="最新版本" /></a>
+    <img src="https://img.shields.io/badge/Android-8.0%2B-37C889" alt="Android 8.0 及以上" />
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-168AC4" alt="MIT 许可证" /></a>
+    <a href="https://github.com/awesome-sean/scriptable-android/stargazers"><img src="https://img.shields.io/github/stars/awesome-sean/scriptable-android?style=flat&amp;logo=github&amp;label=Star&amp;color=E7B748" alt="GitHub Stars" /></a>
+  </p>
   <p><a href="https://github.com/awesome-sean/scriptable-android/releases/download/v0.2.2/Scriptable-Android-0.2.2.apk"><strong>下载 APK · v0.2.2</strong></a> · <a href="docs/COMMUNITY_USAGE.txt">使用说明</a> · <a href="https://github.com/awesome-sean/scriptable-android/releases">版本记录</a></p>
 </div>
 
