@@ -11,6 +11,10 @@
   <p><a href="https://github.com/awesome-sean/scriptable-android/releases/download/v0.2.2/Scriptable-Android-0.2.2.apk"><strong>下载 APK · v0.2.2</strong></a> · <a href="docs/COMMUNITY_USAGE.txt">使用说明</a> · <a href="https://github.com/awesome-sean/scriptable-android/releases">版本记录</a></p>
 </div>
 
+本项目由 **awesome-sean** 基于 **[EdenleeGitHub/scriptable-android](https://github.com/EdenleeGitHub/scriptable-android) v0.2.1** 派生并维护，在上游基础上改进界面、定时自动化、桌面小组件和更新体验。保留原作者及贡献者的版权声明，继续使用 **[MIT 许可证](LICENSE)**。
+
+上游是参照 [Scriptable 公开文档](https://docs.scriptable.app/) 实现的独立 Android 替代项目。本仓库是该项目的派生版本，并非从零开发；与 Scriptable、Apple 及上游作者没有官方隶属或合作关系，也不代表上游的官方发行。详细来源见 [上游与派生关系](UPSTREAM.md)。
+
 ## 下载与安装
 
 适用于 **Android 8.0 及以上**。下载文件：**Scriptable-Android-0.2.2.apk**。
