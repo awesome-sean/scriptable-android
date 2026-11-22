@@ -1,11 +1,11 @@
-# 当前测试安装包
+# Scriptable Android 0.2.3
 
-下载 `Scriptable-Community-0.2.2-dev-debug.apk`，在 Android 8.0 及以上设备打开安装，无需解压。安装后的应用名称为“Scriptable 社区版”。
+[下载 APK](https://github.com/awesome-sean/scriptable-android/releases/download/v0.2.3/Scriptable-Android-0.2.3.apk) · [版本说明](https://github.com/awesome-sean/scriptable-android/releases/tag/v0.2.3)
 
-此文件与仓库首页当前预览对应，包含长方形小圆角卡片。它是调试测试包，尚非正式 Release 更新包。
+文件名：Scriptable-Android-0.2.3.apk。适用于 Android 8.0 及以上，下载后直接安装，无需解压。
 
-源码提交：`9d0f9080538b1ce00dc6ba1111d19c3df904fabb`。
+修复长脚本粘贴卡顿，优化排版计算，并提供中文小组件添加说明。沿用 0.2.2 的正式签名，支持覆盖更新。
 
-[成功的构建与测试记录](https://github.com/awesome-sean/scriptable-android/actions/runs/45028661820)
+[完整构建与测试记录](https://github.com/awesome-sean/scriptable-android/actions/runs/45053064202)
 
-SHA-256：`a146519e32eb6e0c5453515d7ed52253e7845b5821ebe495fc86dc68ae5aed39`
+SHA-256：`91d9dc82b93cfb3fbbfd349d0e5343f6a217e2ec378d61a80711b757cc96ec0a`。
