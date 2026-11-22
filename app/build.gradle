@@ -38,6 +38,7 @@ android {
     testOptions {
         unitTests.includeAndroidResources = true
         unitTests.all {
+            systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
             def cachedSdk = new File("${System.getProperty('user.home')}/.m2/repository/org/robolectric/android-all-instrumented/9-robolectric-4913185-2-i7")
             if (new File(cachedSdk, 'android-all-instrumented-9-robolectric-4913185-2-i7.jar').exists()) {
                 systemProperty 'robolectric.offline', 'true'

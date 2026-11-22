@@ -43,7 +43,7 @@ jobs:
             if ./gradlew --no-daemon --continue assembleDebug testDebugUnitTest lintDebug 2>&1 | tee /tmp/community-gradle.log; then
               exit 0
             fi
-            if ! rg -q 'status code 429|Too Many Requests|Read timed out|Connection reset' /tmp/community-gradle.log; then
+            if ! grep -Eq 'status code 429|Too Many Requests|Read timed out|Connection reset' /tmp/community-gradle.log; then
               exit 1
             fi
             if [ "$attempt" = 3 ]; then exit 1; fi
