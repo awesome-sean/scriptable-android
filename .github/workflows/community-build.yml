@@ -23,6 +23,10 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric/android-all-instrumented
+          key: robolectric-sdk-4.16.1-v1
       - run: npm ci --no-audit --no-fund
       - name: Fonts for Chinese Canvas regressions
         run: |
@@ -43,11 +47,11 @@ jobs:
             if ./gradlew --no-daemon --continue assembleDebug testDebugUnitTest lintDebug 2>&1 | tee /tmp/community-gradle.log; then
               exit 0
             fi
-            if ! grep -Eq 'status code 429|Too Many Requests|Read timed out|Connection reset' /tmp/community-gradle.log; then
+            if ! grep -ERq 'status code 429|response code: 429|Too Many Requests|Read timed out|Connection reset' /tmp/community-gradle.log app/build/test-results app/build/reports/tests; then
               exit 1
             fi
             if [ "$attempt" = 3 ]; then exit 1; fi
-            sleep 10
+            sleep 20
           done
       - name: Verify APK contains the reviewed sources and license assets
         run: python3 tools/verify-apk.py --apk app/build/outputs/apk/debug/app-debug.apk --report app/build/reports/build-manifest.json
