@@ -82,7 +82,7 @@ public final class ScriptWidgetProvider extends AppWidgetProvider {
     }
     static Object requestPin(Context context, JSONObject payload) throws Exception {
         if (payload.has("tree")) save(context, payload);
-        AppWidgetManager manager = AppWidgetManager.getInstance(context); if (!manager.isRequestPinAppWidgetSupported()) throw new Exception("This launcher does not support pinning widgets; add Scriptable from the launcher widget menu");
+        AppWidgetManager manager = AppWidgetManager.getInstance(context); if (!manager.isRequestPinAppWidgetSupported()) throw new Exception("当前桌面不支持直接添加。请长按桌面空白处，在小组件列表中查找 Scriptable Android；若列表中也没有，当前系统或兼容环境尚不支持此小组件。");
         String script = payload.optString("scriptId", store(context).getString("scriptId", "")); validateScript(script);
         String token = UUID.randomUUID().toString();
         JSONObject data = new JSONObject().put("scriptId", script).put("parameter", payload.optString("parameter", store(context).getString("parameter", ""))).put("family", payload.optString("family", store(context).getString("family", "small")));

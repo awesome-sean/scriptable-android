@@ -134,7 +134,7 @@
   });
   window.addEventListener('app-resume',()=>{if(state.tab==='automation')window.AutomationUI.refresh();launchUpdates.check();launchUpdates.flush();});
   function renderUpdatePreview() {
-    main.innerHTML='<section class="page update-page">'+top('检查更新')+'<div class="update-card"><div class="update-brand"><span class="brand-mark"><img src="brand/app-icon-v2.png" alt="应用图标"></span><div><h2>Scriptable Android</h2><p>当前版本 0.2.2</p></div></div><p class="update-state" id="update-state">检查是否有可安装的新版本。</p><button class="primary-button" id="preview-check-update">检查更新</button></div><button class="text-button" id="preview-release-page">查看发布页面 '+icon('external')+'</button><p class="automation-help">新版下载完成后会打开系统安装界面。按系统提示确认安装，应用数据会保留。</p><p class="automation-help">此页为界面预览，不会下载安装包。</p></section>';
+    main.innerHTML='<section class="page update-page">'+top('检查更新')+'<div class="update-card"><div class="update-brand"><span class="brand-mark"><img src="brand/app-icon-v2.png" alt="应用图标"></span><div><h2>Scriptable Android</h2><p>当前版本 0.2.3</p></div></div><p class="update-state" id="update-state">检查是否有可安装的新版本。</p><button class="primary-button" id="preview-check-update">检查更新</button></div><button class="text-button" id="preview-release-page">查看发布页面 '+icon('external')+'</button><p class="automation-help">新版下载完成后会打开系统安装界面。按系统提示确认安装，应用数据会保留。</p><p class="automation-help">此页为界面预览，不会下载安装包。</p></section>';
     document.getElementById('preview-check-update').onclick=()=>{document.getElementById('update-state').textContent='浏览器预览不连接更新服务。安装 APK 后可检查实际版本。';};
     document.getElementById('preview-release-page').onclick=()=>notify('预览中不跳转外部页面');
   }
@@ -247,7 +247,7 @@
     document.getElementById('scheduled-scripts').onclick = () => navigate('automation');
     document.getElementById('show-limits').onclick = () => navigate('docs');
     document.getElementById('show-about').onclick = () => {
-      showModal('关于', '<p class="modal-copy">Scriptable Android<br>0.2.2<br><br>由 awesome-sean 基于 EdenleeGitHub/scriptable-android v0.2.1 修改，非上游官方发行版。<br>保留上游及第三方开源许可。</p>', '<button id="open-licenses" class="secondary-button">开源许可</button>');
+      showModal('关于', '<p class="modal-copy">Scriptable Android<br>0.2.3<br><br>由 awesome-sean 基于 EdenleeGitHub/scriptable-android v0.2.1 修改，非上游官方发行版。<br>保留上游及第三方开源许可。</p>', '<button id="open-licenses" class="secondary-button">开源许可</button>');
       document.getElementById('open-licenses').onclick = () => { if (!native()) return notify('安装 Android 应用后可查看随包许可；源码中的 LICENSE 也可查阅'); hostCall('licenses.open',{}).catch(error => notify(error.message)); };
     };
   }
@@ -304,6 +304,11 @@
     const highlightContent = document.createElement('code'); highlightContent.id = 'code-highlight-content'; highlight.appendChild(highlightContent);
     editorArea.appendChild(viewport); viewport.append(highlight, input);
     input.setAttribute('enterkeyhint', 'enter'); input.setAttribute('inputmode', 'text');
+    input.addEventListener('paste',event=>{
+      const text=event.clipboardData?.getData('text/plain');if(!text)return;
+      const value=input.value.slice(0,input.selectionStart)+text+input.value.slice(input.selectionEnd);
+      if(new TextEncoder().encode(value).length>1024*1024){event.preventDefault();notify('脚本超过 1 MB，未粘贴；原内容已保留。');}
+    });
     input.oninput = () => { updateLineNumbers(); updateCursor(); queueSave(); updateCompletion(); };
     input.addEventListener('compositionstart', () => { viewport.classList.add('is-composing'); hideCompletion(); });
     input.addEventListener('compositionend', () => { viewport.classList.remove('is-composing'); updateLineNumbers(); updateCursor(); queueSave(); });
@@ -343,7 +348,7 @@
   function hideCompletion() { completion.items = []; completion.selected = -1; document.querySelector('.completion-popup')?.remove(); document.getElementById('code-input')?.removeAttribute('aria-activedescendant'); }
   function updateCompletion() {
     const input = document.getElementById('code-input');
-    if (!completionEnabled || !input || input.selectionStart !== input.selectionEnd || input.closest('.is-composing')) return hideCompletion();
+    if (!completionEnabled || !input || input.closest('.plain-editor') || input.selectionStart !== input.selectionEnd || input.closest('.is-composing')) return hideCompletion();
     const before = input.value.slice(0, input.selectionStart); if (before.length > 400000) return hideCompletion();
     const code = before.replace(/\/\*[\s\S]*?(?:\*\/|$)|\/\/[^\n]*|"(?:\\.|[^"\\\n])*(?:"|(?=\n|$))|'(?:\\.|[^'\\\n])*(?:'|(?=\n|$))|`(?:\\.|[^`\\])*(?:`|$)/g, value => '\0'.repeat(value.length));
     const token = /(?:([A-Za-z_$][\w$]*)\.)?([A-Za-z_$][\w$]*)$/.exec(code); if (!token) return hideCompletion();
@@ -397,20 +402,36 @@
     return output + escape(value.slice(cursor)) + '\n';
   }
   let editorResizeWatcher = null;
+  let editorPaintCache = null;
+  let cursorLineCache = null;
   function updateLineNumbers() {
     const input = document.getElementById('code-input');
     const gutter = document.getElementById('line-number-content');
     if (!input || !gutter) return;
+    const value=input.value;
+    // Bound DOM work before tokenization or per-line layout measurement.
+    const plain=value.length>32000||value.split('\n').some((line,index)=>index>=400||line.length>2000);
+    input.closest('.editor-area').classList.toggle('plain-editor',plain);
+    const indicator=document.querySelector('.wrap-indicator');if(indicator){indicator.textContent=plain?'纯文本 · 自动换行':'自动换行';indicator.title=plain?'长脚本使用纯文本编辑，保留全部代码并减少排版开销。':'';}
+    const highlight = document.getElementById('code-highlight-content');
+    if(plain){
+      if(highlight?.firstChild)highlight.replaceChildren();
+      if(gutter.firstChild)gutter.replaceChildren();
+      document.querySelector('.code-measure')?.remove();hideCompletion();editorPaintCache=null;
+      return;
+    }
     const style = getComputedStyle(input);
     const width = Math.max(1,input.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight));
-    const highlight = document.getElementById('code-highlight-content');
-    if (highlight) { highlight.innerHTML = highlightCode(input.value); highlight.style.width=width+'px'; }
+    const geometry=[width,style.font,style.letterSpacing,style.tabSize].join('|');
+    if(editorPaintCache?.input===input&&editorPaintCache.value===value&&editorPaintCache.geometry===geometry){syncEditorScroll();return;}
+    if (highlight) { highlight.innerHTML = highlightCode(value); highlight.style.width=width+'px'; }
     let mirror=document.querySelector('.code-measure');
     if(!mirror){mirror=document.createElement('div');mirror.className='code-measure';mirror.setAttribute('aria-hidden','true');input.parentElement.appendChild(mirror);}
     mirror.style.width=width+'px';mirror.style.font=style.font;mirror.style.letterSpacing=style.letterSpacing;mirror.style.tabSize=style.tabSize;
-    mirror.innerHTML=input.value.split('\n').map(line=>'<div>'+escape(line||' ')+'</div>').join('');
+    mirror.innerHTML=value.split('\n').map(line=>'<div>'+escape(line||' ')+'</div>').join('');
     const heights=Array.from(mirror.children,element=>element.getBoundingClientRect().height);
     gutter.innerHTML=heights.map((height,index)=>'<span style="height:'+height+'px">'+(index+1)+'</span>').join('');
+    editorPaintCache={input,value,geometry};
 
     syncEditorScroll();
   }
@@ -441,8 +462,14 @@
     const input = document.getElementById('code-input');
     const display = document.getElementById('cursor-position');
     if (!input || !display) return;
-    const before = input.value.slice(0, input.selectionStart).split('\n');
-    display.textContent = 'Ln ' + before.length + ', Col ' + (before[before.length - 1].length + 1);
+    const value=input.value;
+    if(cursorLineCache?.input!==input||cursorLineCache.value!==value){
+      const starts=[0];let next=-1;while((next=value.indexOf('\n',next+1))!==-1)starts.push(next+1);
+      cursorLineCache={input,value,starts};
+    }
+    const starts=cursorLineCache.starts,position=input.selectionStart;let low=0,high=starts.length;
+    while(low+1<high){const middle=(low+high)>>1;if(starts[middle]<=position)low=middle;else high=middle;}
+    display.textContent='Ln '+(low+1)+', Col '+(position-starts[low]+1);
   }
   function insertText(text, pair) {
     const input = document.getElementById('code-input');
@@ -647,7 +674,10 @@
     const button = document.createElement('button'); button.className = 'widget-pin'; button.innerHTML = icon('widget') + '添加到主屏幕'; button.onclick = async () => {
       if (!native()) return notify('请在 Android 应用中添加桌面小组件');
       button.disabled = true;
-      try { await hostCall('widget.pin', { scriptId: state.runId, tree: state.widget, family: state.widgetFamily || 'medium' }); notify('已请求添加小组件，请在系统提示中确认'); } catch (error) { notify('无法添加：' + error.message); }
+      try {
+        const result=await hostCall('widget.pin', { scriptId: state.runId, tree: state.widget, family: state.widgetFamily || 'medium' });
+        notify(result?.requested===false?'桌面未接受添加请求，请从桌面的小组件列表尝试手动添加。':'已请求添加小组件，请在系统提示中确认');
+      } catch (error) { notify('无法添加：' + error.message); }
       button.disabled = false;
     };
     wrap.appendChild(button); content.appendChild(wrap);
