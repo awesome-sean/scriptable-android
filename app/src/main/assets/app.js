@@ -109,6 +109,7 @@
     navRender();
     render();
     window.scrollTo(0, 0);
+    launchUpdates.flush();
   }
   function render() {
     if (state.currentId) return renderEditor();
@@ -122,9 +123,18 @@
   function renderAutomation() {
     window.AutomationUI.render({main,heading:top('自动化'),icon,escape,scripts:state.scripts,hostCall,notify,navigate});
   }
-  window.addEventListener('app-resume',()=>{if(state.tab==='automation')window.AutomationUI.refresh();});
+  const launchUpdates=window.UpdatePrompt.create({
+    check:()=>native()?hostCall('update.check',{}):Promise.resolve({state:'current'}),
+    canPresent:()=>window.__appReady&&!state.currentId&&!modalRoot.firstChild&&!document.hidden,
+    present:release=>{
+      showModal('发现新版本', '<p class="modal-copy">Scriptable Android '+escape(release.version)+' 已发布。</p><p class="modal-copy">'+escape(String(release.notes||'有新的版本可供下载。').slice(0,600))+'</p>', '<button id="update-later" class="secondary-button">稍后</button><button id="update-now" class="primary-button">查看更新</button>');
+      document.getElementById('update-later').onclick=closeModal;
+      document.getElementById('update-now').onclick=()=>{closeModal();hostCall('update.open',{}).catch(e=>notify(e.message));};
+    }
+  });
+  window.addEventListener('app-resume',()=>{if(state.tab==='automation')window.AutomationUI.refresh();launchUpdates.check();launchUpdates.flush();});
   function renderUpdatePreview() {
-    main.innerHTML='<section class="page update-page">'+top('检查更新')+'<div class="update-card"><div class="update-brand"><span class="brand-mark"><img src="brand/app-icon-v2.png" alt="应用图标"></span><div><h2>Scriptable 社区版</h2><p>当前版本 0.2.2-dev</p></div></div><p class="update-state" id="update-state">检查是否有可安装的新版本。</p><button class="primary-button" id="preview-check-update">检查更新</button></div><button class="text-button" id="preview-release-page">查看发布页面 '+icon('external')+'</button><p class="automation-help">新版下载完成后会打开系统安装界面。按系统提示确认安装，应用数据会保留。</p><p class="automation-help">此页为界面预览，不会下载安装包。</p></section>';
+    main.innerHTML='<section class="page update-page">'+top('检查更新')+'<div class="update-card"><div class="update-brand"><span class="brand-mark"><img src="brand/app-icon-v2.png" alt="应用图标"></span><div><h2>Scriptable Android</h2><p>当前版本 0.2.2</p></div></div><p class="update-state" id="update-state">检查是否有可安装的新版本。</p><button class="primary-button" id="preview-check-update">检查更新</button></div><button class="text-button" id="preview-release-page">查看发布页面 '+icon('external')+'</button><p class="automation-help">新版下载完成后会打开系统安装界面。按系统提示确认安装，应用数据会保留。</p><p class="automation-help">此页为界面预览，不会下载安装包。</p></section>';
     document.getElementById('preview-check-update').onclick=()=>{document.getElementById('update-state').textContent='浏览器预览不连接更新服务。安装 APK 后可检查实际版本。';};
     document.getElementById('preview-release-page').onclick=()=>notify('预览中不跳转外部页面');
   }
@@ -237,7 +247,7 @@
     document.getElementById('scheduled-scripts').onclick = () => navigate('automation');
     document.getElementById('show-limits').onclick = () => navigate('docs');
     document.getElementById('show-about').onclick = () => {
-      showModal('关于', '<p class="modal-copy">Scriptable Android 社区版<br>0.2.2-dev<br><br>由 awesome-sean 基于 EdenleeGitHub/scriptable-android v0.2.1 修改，非上游官方发行版。<br>保留上游及第三方开源许可。</p>', '<button id="open-licenses" class="secondary-button">开源许可</button>');
+      showModal('关于', '<p class="modal-copy">Scriptable Android<br>0.2.2<br><br>由 awesome-sean 基于 EdenleeGitHub/scriptable-android v0.2.1 修改，非上游官方发行版。<br>保留上游及第三方开源许可。</p>', '<button id="open-licenses" class="secondary-button">开源许可</button>');
       document.getElementById('open-licenses').onclick = () => { if (!native()) return notify('安装 Android 应用后可查看随包许可；源码中的 LICENSE 也可查阅'); hostCall('licenses.open',{}).catch(error => notify(error.message)); };
     };
   }
@@ -787,7 +797,7 @@
       applySettings(); navRender(); render();
       window.__appReady = true;
       if (bootstrap.openScriptId) openScript(bootstrap.openScriptId, Boolean(bootstrap.runScript));
-      hostCall('ui.ready', {}).catch(() => {});
+      hostCall('ui.ready', {}).then(()=>launchUpdates.check()).catch(() => {});
     } catch (error) { main.innerHTML = '<div class="error-box">工作空间无法打开：' + escape(error.message) + '<br>请关闭后重新打开应用。</div>'; }
   }
   init();

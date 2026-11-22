@@ -24,7 +24,7 @@ public final class UpdateActivity extends Activity {
     private final Runnable poll=new Runnable(){@Override public void run(){if(!visible||destroyed)return;refreshDownload();main.postDelayed(this,1500);}};
     @Override public void onCreate(Bundle saved){
         super.onCreate(saved);ui=new NativePage(this);ui.open("检查更新",this::finish);
-        LinearLayout version=ui.group();version.addView(ui.label("Scriptable 社区版",20,false));
+        LinearLayout version=ui.group();version.addView(ui.label("Scriptable Android",20,false));
         try{ui.note(version,"当前版本 "+AppUpdater.installed(this).versionName);}catch(Exception e){ui.note(version,"无法读取当前版本");}
         state=ui.label("正在检查更新…",16,false);version.addView(state);
         progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setMax(100);progress.setVisibility(android.view.View.GONE);version.addView(progress,new LinearLayout.LayoutParams(-1,ui.dp(12)));

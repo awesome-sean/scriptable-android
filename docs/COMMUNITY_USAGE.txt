@@ -1,4 +1,4 @@
-Scriptable 社区版使用说明
+Scriptable Android使用说明
 
 一、安装与导入
 在仓库首页下载 Android APK，并按系统提示安装。

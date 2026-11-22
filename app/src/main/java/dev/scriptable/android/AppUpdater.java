@@ -46,7 +46,7 @@ final class AppUpdater {
         File folder=new File(external,"updates");if(!folder.isDirectory()&&!folder.mkdirs())throw new IOException("无法创建更新下载目录");
         File target=new File(folder,"update-"+UUID.randomUUID()+".apk");
         DownloadManager.Request request=new DownloadManager.Request(Uri.parse(release.getString("url")))
-            .setTitle("Scriptable 社区版 "+release.getString("version")).setDescription("下载完成后可在检查更新中安装")
+            .setTitle("Scriptable Android "+release.getString("version")).setDescription("下载完成后可在检查更新中安装")
             .setMimeType("application/vnd.android.package-archive").setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setAllowedOverMetered(true).setAllowedOverRoaming(false).setDestinationUri(Uri.fromFile(target));
         DownloadManager manager=(DownloadManager)c.getSystemService(Context.DOWNLOAD_SERVICE);long id=manager.enqueue(request);

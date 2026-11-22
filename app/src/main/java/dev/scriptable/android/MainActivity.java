@@ -412,6 +412,7 @@ public final class MainActivity extends Activity {
         if(action.equals("notification.resetCurrent")){launchArgs.remove("notification");return true;}
         if(action.startsWith("notification."))return ScriptNotifications.call(this,action,payload);
         switch (action) {
+            case "update.check":return AppUpdater.check(this);
             case "automation.list":return new JSONObject().put("tasks",AutomationStore.all(this)).put("permissions",new JSONObject().put("notifications",((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).areNotificationsEnabled()).put("exact",AutomationScheduler.exact(this)));
             case "automation.save":{JSONObject task=AutomationStore.save(this,payload);AutomationScheduler.schedule(this,task.getString("id"));return AutomationStore.find(this,task.getString("id"));}
             case "automation.remove":AutomationScheduler.remove(this,payload.getString("id"));return true;

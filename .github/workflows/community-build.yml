@@ -51,12 +51,21 @@ jobs:
           done
       - name: Verify APK contains the reviewed sources and license assets
         run: python3 tools/verify-apk.py --apk app/build/outputs/apk/debug/app-debug.apk --report app/build/reports/build-manifest.json
+      - name: Build unsigned release for local signing
+        run: |
+          ./gradlew --no-daemon assembleRelease lintRelease
+          python3 tools/verify-apk.py --apk app/build/outputs/apk/release/app-release-unsigned.apk --report app/build/reports/release-manifest.json
+          mkdir -p app/build/reports/signing-tools
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" app/build/reports/signing-tools/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: community-debug-build
           path: |
             app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
             app/build/reports/tests/
             app/build/reports/lint-results-debug.*
             app/build/reports/build-manifest.json
+            app/build/reports/release-manifest.json
+            app/build/reports/signing-tools/

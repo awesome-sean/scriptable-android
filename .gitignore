@@ -26,3 +26,5 @@ node_modules/
 test-results/
 playwright-report/
 dist/
+
+!downloads/Scriptable-Android-*.apk

@@ -20,6 +20,8 @@ public class UpdateRegressionTest {
         try{UpdateRelease.newer("latest","0.2.2");fail("Invalid tag accepted");}catch(Exception expected){assertTrue(expected.getMessage().contains("版本"));}
     }
     @Test public void onlyPublishedStableCommunityApkIsSelected()throws Exception{
+        JSONObject versioned=asset().put("name","Scriptable-Android-0.3.0.apk").put("browser_download_url","https://github.com/awesome-sean/scriptable-android/releases/download/v0.3.0/Scriptable-Android-0.3.0.apk");
+        assertEquals("v0.3.0",UpdateRelease.candidate(release().put("assets",new JSONArray().put(versioned)),"0.2.2").getString("version"));
         JSONObject selected=UpdateRelease.candidate(release(),"0.2.2-dev");assertEquals("v0.3.0",selected.getString("version"));assertEquals("新版说明",selected.getString("notes"));
         assertNull(UpdateRelease.candidate(release().put("prerelease",true),"0.2.2"));assertNull(UpdateRelease.candidate(release().put("draft",true),"0.2.2"));
         assertNull(UpdateRelease.candidate(release(),"0.3.0"));
