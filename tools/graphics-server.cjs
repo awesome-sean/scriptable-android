@@ -3,7 +3,7 @@
 const { createCanvas, Image, GlobalFonts } = require('@napi-rs/canvas');
 const fs = require('node:fs');
 const MAX_SIDE = 2048, MAX_PIXELS = 4 * 1024 * 1024, MAX_BYTES = 8 * 1024 * 1024, MAX_COMMANDS = 10000;
-for (const [file, name] of [['C:/Windows/Fonts/msyh.ttc', 'Microsoft YaHei'], ['C:/Windows/Fonts/simsun.ttc', 'SimSun']]) if (fs.existsSync(file)) { try { GlobalFonts.registerFromPath(file, name); } catch (_) {} }
+for (const [file, name] of [['C:/Windows/Fonts/msyh.ttc', 'Microsoft YaHei'], ['C:/Windows/Fonts/simsun.ttc', 'SimSun'], ['/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc', 'Microsoft YaHei'], ['/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 'Arial']]) if (fs.existsSync(file)) { try { GlobalFonts.registerFromPath(file, name); } catch (_) {} }
 function dimensions(width, height) { if (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || height < 1 || width > MAX_SIDE || height > MAX_SIDE || width * height > MAX_PIXELS) throw new Error('Images must be 1-2048 pixels per dimension and at most 4 megapixels.'); }
 function n(value, fallback = 0) { const number = Number(value ?? fallback); if (!Number.isFinite(number) || Math.abs(number) > 1000000) throw new Error('Invalid drawing number.'); return number; }
 function imageBytes(base64) { if (typeof base64 !== 'string' || base64.length > Math.ceil(MAX_BYTES * 4 / 3) + 16 || !/^[A-Za-z0-9+/]*={0,2}$/.test(base64.replace(/\s/g, ''))) throw new Error('Invalid or oversized image base64.'); const bytes = Buffer.from(base64, 'base64'); if (bytes.length > MAX_BYTES) throw new Error('Image exceeds 8 MiB.'); return bytes; }
