@@ -1,0 +1,13 @@
+此应用为 awesome-sean 维护的派生版本。
+基于 EdenleeGitHub/scriptable-android v0.2.1
+基础提交：20fac996b6f37f93230bd5e334cd5c86658c79e2
+上游：https://github.com/EdenleeGitHub/scriptable-android
+派生：https://github.com/awesome-sean/scriptable-android
+
+上游版权：Copyright (c) 2026 EdenleeGitHub and contributors
+上游及本派生仓库新增、修改的代码按 MIT 许可证提供。
+上游 MIT 原文见 UPSTREAM-MIT.txt；第三方资源说明见 THIRD-PARTY-NOTICES.txt。
+图标与字体的许可文件保留于 assets/icons/。
+
+本派生版非上游官方发行版，与 Scriptable 或 Apple 无官方关联。
+派生修改和验证状态见仓库 UPSTREAM.md 与 FORK_CHANGELOG.md。

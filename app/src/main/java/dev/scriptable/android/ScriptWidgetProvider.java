@@ -37,7 +37,7 @@ public final class ScriptWidgetProvider extends AppWidgetProvider {
     }
     static synchronized Object save(Context context, JSONObject payload) throws Exception {
         JSONObject tree = payload.getJSONObject("tree"); String scriptId = payload.optString("scriptId", ""); validateScript(scriptId);
-        String parameter = payload.isNull("parameter") ? "" : payload.optString("parameter", ""), family = payload.optString("family", "medium");
+        String parameter = payload.isNull("parameter") ? "" : payload.optString("parameter", ""), family = payload.optString("family", "small");
         int target = payload.optInt("targetWidgetId", -1);
         AppWidgetManager manager = AppWidgetManager.getInstance(context); int[] ids = manager.getAppWidgetIds(new ComponentName(context, ScriptWidgetProvider.class));
         if (target > 0) {
@@ -52,7 +52,7 @@ public final class ScriptWidgetProvider extends AppWidgetProvider {
         for (int id : ids) {
             String configured = store(context).getString("script." + id, "");
             if (configured.isEmpty()) configure(context, id, scriptId, parameter, family);
-            if (scriptId.equals(store(context).getString("script." + id, "")) && parameter.equals(store(context).getString("parameter." + id, "")) && family.equals(store(context).getString("family." + id, "medium"))) { updateInstance(context, id, tree); updated++; }
+            if (scriptId.equals(store(context).getString("script." + id, "")) && parameter.equals(store(context).getString("parameter." + id, "")) && family.equals(store(context).getString("family." + id, "small"))) { updateInstance(context, id, tree); updated++; }
         }
         WidgetRefreshJob.schedule(context);
         return new JSONObject().put("saved", true).put("widgetCount", updated);
@@ -76,7 +76,7 @@ public final class ScriptWidgetProvider extends AppWidgetProvider {
         JSONArray result = new JSONArray(); AppWidgetManager manager = AppWidgetManager.getInstance(context);
         for (int id : manager.getAppWidgetIds(new ComponentName(context, ScriptWidgetProvider.class))) {
             String scriptId = store(context).getString("script." + id, ""); if (scriptId.isEmpty()) continue;
-            result.put(new JSONObject().put("widgetId", id).put("scriptId", scriptId).put("parameter", store(context).getString("parameter." + id, "")).put("family", store(context).getString("family." + id, "medium")).put("refreshAfterDate", store(context).getLong("refreshAfter." + id, 0)).put("updatedAt", store(context).getLong("updated." + id, 0)));
+            result.put(new JSONObject().put("widgetId", id).put("scriptId", scriptId).put("parameter", store(context).getString("parameter." + id, "")).put("family", store(context).getString("family." + id, "small")).put("refreshAfterDate", store(context).getLong("refreshAfter." + id, 0)).put("updatedAt", store(context).getLong("updated." + id, 0)));
         }
         return result;
     }
@@ -85,7 +85,7 @@ public final class ScriptWidgetProvider extends AppWidgetProvider {
         AppWidgetManager manager = AppWidgetManager.getInstance(context); if (!manager.isRequestPinAppWidgetSupported()) throw new Exception("This launcher does not support pinning widgets; add Scriptable from the launcher widget menu");
         String script = payload.optString("scriptId", store(context).getString("scriptId", "")); validateScript(script);
         String token = UUID.randomUUID().toString();
-        JSONObject data = new JSONObject().put("scriptId", script).put("parameter", payload.optString("parameter", store(context).getString("parameter", ""))).put("family", payload.optString("family", store(context).getString("family", "medium")));
+        JSONObject data = new JSONObject().put("scriptId", script).put("parameter", payload.optString("parameter", store(context).getString("parameter", ""))).put("family", payload.optString("family", store(context).getString("family", "small")));
         store(context).edit().putString("pending." + token, data.toString()).apply();
         Intent bound = new Intent(context, ScriptWidgetProvider.class).setAction(ACTION_BOUND).setData(Uri.parse("scriptable-android://widget-bound/" + token)).putExtra("token", token);
         PendingIntent callback = PendingIntent.getBroadcast(context, token.hashCode(), bound, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_ONE_SHOT);
@@ -100,14 +100,14 @@ public final class ScriptWidgetProvider extends AppWidgetProvider {
             int id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
             android.appwidget.AppWidgetProviderInfo info = AppWidgetManager.getInstance(context).getAppWidgetInfo(id);
             if (info == null || !new ComponentName(context, ScriptWidgetProvider.class).equals(info.provider)) return;
-            try { JSONObject data = new JSONObject(pending); if(!store(context).contains("script."+id))configure(context, id, data.getString("scriptId"), data.optString("parameter"), data.optString("family", "medium"));else WidgetRefreshJob.request(context,new int[]{id}); } catch (Exception ignored) { }
+            try { JSONObject data = new JSONObject(pending); if(!store(context).contains("script."+id))configure(context, id, data.getString("scriptId"), data.optString("parameter"), data.optString("family", "small"));else WidgetRefreshJob.request(context,new int[]{id}); } catch (Exception ignored) { }
             return;
         }
         if (ACTION_REFRESH.equals(intent.getAction())) { WidgetRefreshJob.request(context, null); return; }
         super.onReceive(context, intent);
     }
     @Override public void onUpdate(Context context, AppWidgetManager manager, int[] ids) {
-        for (int id : ids) { if (!store(context).contains("script." + id)) { String script = store(context).getString("scriptId", ""); if (!script.isEmpty()) try { configure(context, id, script, store(context).getString("parameter", ""), store(context).getString("family", "medium")); } catch (Exception ignored) { } } update(context, manager, id); }
+        for (int id : ids) { if (!store(context).contains("script." + id)) { String script = store(context).getString("scriptId", ""); if (!script.isEmpty()) try { configure(context, id, script, store(context).getString("parameter", ""), store(context).getString("family", "small")); } catch (Exception ignored) { } } update(context, manager, id); }
         WidgetRefreshJob.schedule(context); WidgetRefreshJob.request(context, ids);
     }
     @Override public void onAppWidgetOptionsChanged(Context context, AppWidgetManager manager, int widgetId, Bundle options) { update(context, manager, widgetId); WidgetRefreshJob.request(context, new int[]{widgetId}); }
@@ -117,17 +117,19 @@ public final class ScriptWidgetProvider extends AppWidgetProvider {
         editor.apply(); WidgetRefreshJob.schedule(context);
     }
     @Override public void onRestored(Context context, int[] oldIds, int[] newIds) {
-        for (int i = 0; i < Math.min(oldIds.length, newIds.length); i++) try { configure(context, newIds[i], store(context).getString("script." + oldIds[i], ""), store(context).getString("parameter." + oldIds[i], ""), store(context).getString("family." + oldIds[i], "medium")); JSONObject tree = readTree(context, "instance-" + oldIds[i]); if (tree.length() > 0) updateInstance(context, newIds[i], tree); } catch (Exception ignored) { }
+        for (int i = 0; i < Math.min(oldIds.length, newIds.length); i++) try { configure(context, newIds[i], store(context).getString("script." + oldIds[i], ""), store(context).getString("parameter." + oldIds[i], ""), store(context).getString("family." + oldIds[i], "small")); JSONObject tree = readTree(context, "instance-" + oldIds[i]); if (tree.length() > 0) updateInstance(context, newIds[i], tree); } catch (Exception ignored) { }
     }
     static void refreshNow(Context context) { WidgetRefreshJob.request(context, null); }
 
     private static void update(Context context, AppWidgetManager manager, int id) {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget);
-        String scriptId = store(context).getString("script." + id, ""), parameter = store(context).getString("parameter." + id, ""), family = store(context).getString("family." + id, "medium");
+        String scriptId = store(context).getString("script." + id, ""), parameter = store(context).getString("parameter." + id, ""), family = store(context).getString("family." + id, "small");
         JSONObject tree = readTree(context, "instance-" + id);
         try {
             if (tree.length() == 0) tree = new JSONObject().put("type", "widget").put("layout", "vertical").put("backgroundColor", "#F4F6FB").put("children", new JSONArray().put(new JSONObject().put("type", "text").put("text", "打开 Scriptable Android\n选择并运行小组件脚本").put("textColor", "#202B40").put("font", new JSONObject().put("size", 16))));
-            Bundle options = manager.getAppWidgetOptions(id); int width = Math.max(64, Math.min(900, options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, "small".equals(family) ? 160 : 320))), height = Math.max(48, Math.min(900, options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, "large".equals(family) ? 320 : 160)));
+            Bundle options = manager.getAppWidgetOptions(id);
+            boolean landscape=context.getResources().getConfiguration().orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+            int[] dimensions=dimensions(options,family,landscape);int width=dimensions[0],height=dimensions[1];
             WidgetRenderer.Result result = WidgetRenderer.render(tree, width, height, context.getResources().getDisplayMetrics().density);
             views.setImageViewBitmap(R.id.widget_content, result.bitmap); views.removeAllViews(R.id.widget_hotspots); views.removeAllViews(R.id.widget_live_dates);
             float density = context.getResources().getDisplayMetrics().density;
@@ -160,4 +162,10 @@ public final class ScriptWidgetProvider extends AppWidgetProvider {
         } catch (Exception ignored) { }
     }
     private static boolean allowedURL(String url) { String scheme = Uri.parse(url).getScheme(); return scheme != null && !scheme.matches("(?i)javascript|data|file|content|intent"); }
+    static int[] dimensions(Bundle options,String family,boolean landscape){
+        int fallbackWidth="small".equals(family)?160:320,fallbackHeight="large".equals(family)?320:160;
+        int width=options.getInt(landscape?AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH:AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,fallbackWidth);
+        int height=options.getInt(landscape?AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT:AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,fallbackHeight);
+        return new int[]{Math.max(64,Math.min(900,width>0?width:fallbackWidth)),Math.max(48,Math.min(900,height>0?height:fallbackHeight))};
+    }
 }

@@ -15,13 +15,14 @@ final class HeadlessWidgetRunner {
     private final Context context;private final JSONObject config;private final Consumer<String> done;
     private final Handler main=new Handler(Looper.getMainLooper());private final ExecutorService io=Executors.newFixedThreadPool(2);
     private final Set<String> pending=ConcurrentHashMap.newKeySet();private final Map<HttpURLConnection,String> connections=new ConcurrentHashMap<>();
-    private ScriptRepository repository;private AndroidServices services;private WebView web;private String token;private boolean ended;
+    private ScriptRepository repository;private AndroidServices services;private WebView web;private String token;private boolean ended;private String output="";
+    String output(){return output;}
     HeadlessWidgetRunner(Context c,JSONObject cfg,Consumer<String> callback){context=c;config=cfg;done=callback;}
     void start(){main.post(()->{try{
         repository=new ScriptRepository(context);JSONObject script=repository.find(config.getString("scriptId"));web=new WebView(context);token=NativeResources.register(context);
         services=new AndroidServices(context,new AndroidServices.Callback(){public void resolve(String id,Object value){reply(id,true,value);}public void reject(String id,Exception e){reply(id,false,e.getMessage());}});
         web.getSettings().setJavaScriptEnabled(true);web.getSettings().setDomStorageEnabled(true);web.getSettings().setAllowFileAccess(false);web.getSettings().setAllowContentAccess(false);web.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);web.addJavascriptInterface(new Bridge(),"Android");
-        web.setWebViewClient(new WebViewClient(){@Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest r){return NativeResources.response(r.getUrl());}@Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return !NativeResources.isLocal(r.getUrl());}@Override public void onPageFinished(WebView v,String url){if(!url.endsWith("/headless.html"))return;web.evaluateJavascript("window.__runWidget("+script+","+JSONObject.quote(config.optString("parameter",""))+","+JSONObject.quote(config.optString("family","medium"))+","+config.optInt("widgetId")+")",null);}});
+        web.setWebViewClient(new WebViewClient(){@Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest r){return NativeResources.response(r.getUrl());}@Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return !NativeResources.isLocal(r.getUrl());}@Override public void onPageFinished(WebView v,String url){if(!url.endsWith("/headless.html"))return;String call=config.optBoolean("automation")?"window.__runScheduledScript("+script+","+JSONObject.quote(config.optString("parameter",""))+")":"window.__runWidget("+script+","+JSONObject.quote(config.optString("parameter",""))+","+JSONObject.quote(config.optString("family","medium"))+","+config.optInt("widgetId")+")";web.evaluateJavascript(call,null);}});
         web.onResume();web.loadUrl(NativeResources.ORIGIN+"/assets/headless.html");main.postDelayed(()->finish("后台脚本超过 90 秒，已停止"),90000);
     }catch(Exception e){finish(e.getMessage());}});}
     private JSONObject bootstrap()throws Exception{
@@ -35,7 +36,7 @@ final class HeadlessWidgetRunner {
             if(services.handles(action)){main.post(()->{if(!ended)services.call(requestId,action,data);});return;}
             io.execute(()->{try{if(ended||!pending.contains(requestId))return;Object result;
                 if(action.equals("request")){data.put("timeoutInterval",Math.min(45,data.optDouble("timeoutInterval",45)));result=HttpTransport.request(requestId,data,connections,()->!ended&&pending.contains(requestId));}
-                else if(action.equals("widget.save")){data.put("targetWidgetId",config.getInt("widgetId"));data.put("scriptId",config.getString("scriptId"));data.put("parameter",config.optString("parameter",""));data.put("family",config.optString("family","medium"));result=ScriptWidgetProvider.save(context,data);}
+                else if(action.equals("widget.save")){if(!config.optBoolean("automation"))data.put("targetWidgetId",config.getInt("widgetId"));data.put("scriptId",config.getString("scriptId"));if(!config.optBoolean("automation"))data.put("parameter",config.optString("parameter","")).put("family",config.optString("family","medium"));result=ScriptWidgetProvider.save(context,data);}
                 else if(action.equals("file.op")){result=NativeCloudFolder.fileOperation(context,repository,data);}
                 else if(action.equals("file.metadata"))result=repository.metadataOperation(data);
                 else if(action.equals("repo.save"))result=repository.save(data);
@@ -49,7 +50,7 @@ final class HeadlessWidgetRunner {
                 reply(requestId,true,result);
             }catch(Exception e){reply(requestId,false,e.getMessage());}});
         }catch(Exception e){if(id!=null)reply(id,false,e.getMessage());}}
-        @JavascriptInterface public void widgetDone(String raw){try{JSONObject p=new JSONObject(raw);finish(p.optBoolean("ok")?null:p.optString("error","脚本失败"));}catch(Exception e){finish(e.getMessage());}}
+        @JavascriptInterface public void widgetDone(String raw){try{JSONObject p=new JSONObject(raw);output=p.optString("output","");finish(p.optBoolean("ok")?null:p.optString("error","脚本失败"));}catch(Exception e){finish(e.getMessage());}}
     }
     private void reply(String id,boolean ok,Object value){if(!pending.remove(id)||ended)return;try{String encoded=new JSONArray().put(value==null?JSONObject.NULL:value).toString();encoded=encoded.substring(1,encoded.length()-1);final String js="window.__nativeResolve("+JSONObject.quote(id)+","+ok+","+encoded+")";main.post(()->{if(!ended&&web!=null)web.evaluateJavascript(js,null);});}catch(Exception e){finish(e.getMessage());}}
     void stop(){finish("后台任务被安卓系统停止");}

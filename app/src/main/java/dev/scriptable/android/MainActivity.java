@@ -107,6 +107,7 @@ public final class MainActivity extends Activity {
             setContentView(message);
             return;
         }
+        executor.execute(()->{try{AutomationScheduler.restore(this);}catch(Exception error){getSharedPreferences("scheduled-scripts-v1",0).edit().putString("schedulerError",String.valueOf(error.getMessage())).apply();}});
         web = new WebView(this);
         nativeToken=NativeResources.register(this);
         systemServices=new AndroidServices(this,new AndroidServices.Callback(){public void resolve(String id,Object value){MainActivity.this.resolve(id,value);}public void reject(String id,Exception error){MainActivity.this.reject(id,error);}});
@@ -400,6 +401,7 @@ public final class MainActivity extends Activity {
 
     private static boolean isUiAction(String action) {
         switch (action) {
+            case "licenses.open": case "automation.open": case "update.open": return true;
             case "repo.import": case "repo.export": case "alert": case "clipboard.read": case "clipboard.write":
             case "notification.schedule": case "safari.open": case "share": case "speech": case "widget.pin": case "ui.ready": case "runtime.cancel": case "runtime.finish": case "runtime.start": return true;
             default: return false;
@@ -430,9 +432,12 @@ public final class MainActivity extends Activity {
     private void uiAction(String id, String action, JSONObject payload) throws Exception {
         if (destroyed) throw new Exception("Activity was closed");
         switch (action) {
+            case "licenses.open": startActivity(new Intent(this, LicenseActivity.class)); resolve(id,true); break;
+            case "automation.open": startActivity(new Intent(this, AutomationActivity.class)); resolve(id,true); break;
+            case "update.open": startActivity(new Intent(this, UpdateActivity.class)); resolve(id,true); break;
             case "ui.ready": uiReady = true; dispatchOpenScript(); resolve(id, true); break;
             case "ui.theme":{
-                boolean dark=payload.optBoolean("dark");int color=dark?0xFF141925:0xFFF7F8FC;
+                boolean dark=payload.optBoolean("dark");int color=dark?0xFF12171F:0xFFF3F3F8;
                 if(web.getParent() instanceof android.view.View)((android.view.View)web.getParent()).setBackgroundColor(color);
                 getWindow().setStatusBarColor(color);getWindow().setNavigationBarColor(color);
                 if(Build.VERSION.SDK_INT>=30){android.view.WindowInsetsController controller=getWindow().getInsetsController();if(controller!=null)controller.setSystemBarsAppearance(dark?0:android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);}

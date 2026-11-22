@@ -13,6 +13,7 @@
     down: '<path d="m6 9 6 6 6-6"/>',
     more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
     play: '<path d="m8 4 12 8-12 8V4Z"/>',
+    playRounded: '<path d="M8 5.6Q8 4.1 9.3 4.9L18.7 11Q20.1 12 18.7 13L9.3 19.1Q8 19.9 8 18.4Z"/>',
     stop: '<rect x="5" y="5" width="14" height="14" rx="1"/>',
     globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c5 5 5 13 0 18-5-5-5-13 0-18Z"/>',
     device: '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 5h4m-3 14h2"/>',
@@ -79,18 +80,28 @@
     document.documentElement.dataset.theme = state.settings.theme === 'auto' ? (themeMedia.matches ? 'dark' : 'light') : state.settings.theme;
     document.documentElement.style.setProperty('--editor-size', state.settings.fontSize + 'px');
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = document.documentElement.dataset.theme === 'dark' ? '#141925' : '#f7f8fc';
+    if (meta) meta.content = document.documentElement.dataset.theme === 'dark' ? '#12171F' : '#F3F3F8';
     if(window.Host?.isNative)Host.call('ui.theme',{dark:document.documentElement.dataset.theme==='dark'}).catch(()=>{});
   }
   themeMedia.addEventListener ? themeMedia.addEventListener('change', applySettings) : themeMedia.addListener(applySettings);
   function navRender() {
-    const tabs = [['scripts', 'grid', '脚本'], ['examples', 'spark', '示例'], ['docs', 'book', '文档'], ['settings', 'settings', '设置']];
-    nav.innerHTML = tabs.map(([id, symbol, label]) => '<button class="nav-item' + (state.tab === id ? ' active' : '') + '" data-tab="' + id + '" aria-current="' + (state.tab === id ? 'page' : 'false') + '"><span class="nav-icon">' + icon(symbol) + '</span><span>' + label + '</span></button>').join('');
-    nav.querySelectorAll('[data-tab]').forEach(button => button.onclick = () => navigate(button.dataset.tab));
+    const tabs = [['scripts','grid','脚本'], ['automation','clock','自动化'], ['docs','book','文档']];
+    nav.innerHTML = tabs.map(([id,symbol,label]) => '<button class="nav-item' + (state.tab === id ? ' active' : '') + '" data-tab="' + id + '" aria-current="' + (state.tab === id ? 'page' : 'false') + '"><span class="nav-icon">' + icon(symbol) + '</span><span>' + label + '</span></button>').join('');
+    nav.querySelectorAll('[data-tab]').forEach(button => button.onclick = () => {
+      if (button.dataset.tab !== 'automation') return navigate(button.dataset.tab);
+      if (!native()) return notify('安装 Android 应用后可管理定时自动化');
+      if (!flushSave()) return;
+      hostCall('automation.open',{}).catch(error => notify(error.message));
+    });
   }
-  function top(title, subtitle, action) {
-    return '<div class="top-brand"><span class="brand-mark"><img src="brand/app-icon-v2.png" width="34" height="34" alt="" decoding="async"></span><span class="brand-name">SCRIPTABLE <span>ANDROID</span></span><span class="edition-pill">v0.2</span></div><div class="top-head"><div><h1>' + title + '</h1><p class="subtitle">' + subtitle + '</p></div>' + (action || '') + '</div>';
+  function top(title) {
+    const back = state.tab === 'settings' || state.tab === 'examples';
+    return '<header class="screen-heading">' + (back ? '<button class="heading-button" data-page-action="back" aria-label="返回脚本">' + icon('back') + '</button>' : '') + '<h1>' + escape(title) + '</h1>' + (state.tab !== 'settings' ? '<button class="heading-button" data-page-action="settings" aria-label="设置">' + icon('settings') + '</button>' : '') + '</header>';
   }
+  main.addEventListener('click', event => {
+    const button = event.target.closest('[data-page-action]'); if (!button) return;
+    navigate(button.dataset.pageAction === 'settings' ? 'settings' : 'scripts');
+  });
   function navigate(tab) {
     if (!flushSave()) return false;
     state.currentId = null;
@@ -117,11 +128,20 @@
     if (diff < 7 * 86400 * 1000) return Math.floor(diff / 86400000) + ' 天前';
     return new Date(timestamp).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
   }
+  function tileGradient(value) {
+    let hex = validColor(value).slice(1);
+    if (hex.length === 3 || hex.length === 4) hex = hex.slice(0,3).split('').map(c=>c+c).join('');
+    const [r,g,b] = hex.slice(0,6).match(/.{2}/g).map(c=>parseInt(c,16)/255);
+    const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+    let hue = d === 0 ? 210 : max === r ? 60*(((g-b)/d+6)%6) : max === g ? 60*((b-r)/d+2) : 60*((r-g)/d+4);
+    const saturationScale = .92 * 1.03;
+    return 'linear-gradient(155deg,hsl(' + hue + ' ' + (94*saturationScale) + '% 72%) 0%,hsl(' + hue + ' ' + (91*saturationScale) + '% 68%) 48%,hsl(' + hue + ' ' + (88*saturationScale) + '% ' + (64*.96) + '%) 100%)';
+  }
   function card(script) {
-    return '<article class="script-card" style="--card-color:' + validColor(script.color) + '"><button class="card-open" data-open="' + escape(script.id) + '" aria-label="编辑 ' + escape(script.name) + '"><span class="card-icon">' + icon(script.icon) + '</span><span class="card-title">' + escape(script.name) + '</span><span class="card-meta">' + relativeTime(script.updatedAt) + '</span></button><div class="card-actions"><span class="card-tag">JAVASCRIPT</span><div class="card-action-group"><button class="icon-button" data-options="' + escape(script.id) + '" aria-label="' + escape(script.name) + ' 的更多选项">' + icon('more') + '</button><button class="icon-button card-run" data-run="' + escape(script.id) + '" aria-label="运行 ' + escape(script.name) + '">' + icon('play') + '</button></div></div></article>';
+    return '<article class="script-card" style="--card-color:' + validColor(script.color) + ';--tile-gradient:' + tileGradient(script.color) + '"><button class="card-open" data-open="' + escape(script.id) + '" aria-label="编辑 ' + escape(script.name) + '"><span class="card-icon">' + icon(script.icon) + '</span><span class="card-title">' + escape(script.name) + '</span></button><button class="icon-button card-run" data-run="' + escape(script.id) + '" aria-label="运行 ' + escape(script.name) + '">' + icon('playRounded') + '</button><button class="icon-button card-more" data-options="' + escape(script.id) + '" aria-label="' + escape(script.name) + ' 的更多选项">' + icon('more') + '</button></article>';
   }
   function renderScripts() {
-    main.innerHTML = '<section class="page">' + top('我的脚本', '一点 JavaScript，让日常更简单。', '<button id="add-script" class="add-button" aria-label="新建脚本">' + icon('plus') + '</button>') + '<div class="toolbar"><label class="search-wrap">' + icon('search') + '<input id="script-search" type="search" placeholder="搜索你的脚本" aria-label="搜索脚本" value="' + escape(state.query) + '"></label><select class="sort-select" id="script-sort" aria-label="脚本排序"><option value="updated">最近编辑</option><option value="name">按名称</option><option value="created">创建顺序</option></select><button id="import-script" class="sort-button" aria-label="导入 JavaScript 文件" title="导入脚本">' + icon('download') + '</button></div><div class="section-line"><span class="section-eyebrow">YOUR COLLECTION</span><span id="script-count" class="section-count"></span></div><div id="scripts-grid" class="scripts-grid"></div><div class="getting-started"><span class="hint-icon">' + icon('bolt') + '</span><div><h3>从一个小想法开始</h3><p>查看可运行的示例，写下你的第一个脚本。</p></div><button id="explore-examples" class="text-button">探索示例' + icon('arrow') + '</button></div><p class="footer-caption">CREATED BY YOU · POWERED BY JAVASCRIPT</p></section>';
+    main.innerHTML = '<section class="page">' + top('我的脚本', '一点 JavaScript，让日常更简单。', '') + '<div class="toolbar"><label class="search-wrap">' + icon('search') + '<input id="script-search" type="search" placeholder="搜索你的脚本" aria-label="搜索脚本" value="' + escape(state.query) + '"></label><select class="sort-select" id="script-sort" aria-label="脚本排序"><option value="updated">最近编辑</option><option value="name">按名称</option><option value="created">创建顺序</option></select><button id="add-script" class="add-button" aria-label="新建脚本">' + icon('plus') + '</button><button id="import-script" class="sort-button" aria-label="导入 JavaScript 文件" title="导入脚本">' + icon('download') + '</button></div><div class="section-line"><span id="script-count" class="section-count"></span></div><div id="scripts-grid" class="scripts-grid"></div><div class="getting-started"><span class="hint-icon">' + icon('bolt') + '</span><div><h3>从一个小想法开始</h3><p>查看可运行的示例，写下你的第一个脚本。</p></div><button id="explore-examples" class="text-button">探索示例' + icon('arrow') + '</button></div></section>';
     document.getElementById('script-search').oninput = event => { state.query = event.target.value; updateCards(); };
     document.getElementById('script-sort').value = state.sort;
     document.getElementById('script-sort').onchange = event => { state.sort = event.target.value; updateCards(); };
@@ -143,7 +163,7 @@
     if (document.getElementById('empty-add')) document.getElementById('empty-add').onclick = () => scriptProperties(null);
   }
   function renderExamples() {
-    main.innerHTML = '<section class="page">' + top('灵感与示例', '无需从零开始，把灵感变成你的脚本。') + '<div class="gallery-hero"><div><h2>小脚本，大用途。</h2><p>读取文件、请求数据、创建小组件。<br>导入后即可编辑与运行。</p></div><span class="hero-code">{ }</span></div><div class="section-line"><span class="section-eyebrow">MADE TO EXPLORE</span><span class="section-count">' + state.examples.length + ' 个示例</span></div><div class="example-grid">' + state.examples.map((item, index) => '<article class="example-card" style="--card-color:' + validColor(item.color) + '"><div class="example-title"><span class="card-icon" style="color:' + validColor(item.color) + ';background:color-mix(in srgb,' + validColor(item.color) + ' 12%,var(--surface))">' + icon(item.icon) + '</span><h3>' + escape(item.name) + '</h3></div><p>' + escape(item.description || '') + '</p><div class="example-footer"><span class="pill">' + escape(item.category || '入门示例') + '</span><button class="import-example" data-example="' + index + '">' + icon('plus') + '导入脚本</button></div></article>').join('') + '</div><p class="small-note">示例会保存为独立副本，导入后由你点击运行。联网示例需要网络连接。</p></section>';
+    main.innerHTML = '<section class="page">' + top('灵感与示例', '无需从零开始，把灵感变成你的脚本。') + '<div class="section-line"><span class="section-count">' + state.examples.length + ' 个示例</span></div><div class="example-grid">' + state.examples.map((item, index) => '<article class="example-card" style="--card-color:' + validColor(item.color) + '"><div class="example-title"><span class="card-icon" style="color:' + validColor(item.color) + ';background:color-mix(in srgb,' + validColor(item.color) + ' 12%,var(--surface))">' + icon(item.icon) + '</span><h3>' + escape(item.name) + '</h3></div><p>' + escape(item.description || '') + '</p><div class="example-footer"><span class="pill">' + escape(item.category || '入门示例') + '</span><button class="import-example" data-example="' + index + '">' + icon('plus') + '导入脚本</button></div></article>').join('') + '</div><p class="small-note">示例会保存为独立副本，导入后由你点击运行。联网示例需要网络连接。</p></section>';
     main.querySelectorAll('[data-example]').forEach(button => button.onclick = () => {
       const example = state.examples[Number(button.dataset.example)];
       const script = cleanScript(Object.assign({}, example, { id: uniqueId(), updatedAt: Date.now(), name: uniqueName(example.name) }));
@@ -153,7 +173,7 @@
   function renderDocs() {
     main.innerHTML = '<section class="page">' + top('API 文档', '随手查阅，离线也能写脚本。') + '<div class="notice"><strong>Android 独立实现</strong><br>下面列出本应用实际支持的 API 与边界。兼容部分 Scriptable 写法；iOS 专属能力与完整官方 API 尚未实现。</div><div class="docs-list">' + state.docs.map((doc, index) => '<article class="doc-item" id="doc-' + index + '"><button class="doc-summary" data-doc="' + index + '" aria-expanded="false"><span class="doc-initial">' + escape(doc.name.slice(0, 2)) + '</span><span><span class="doc-name">' + escape(doc.name) + '</span><span class="doc-subtitle" style="display:block">' + escape(doc.description) + '</span></span>' + icon('down') + '</button><div class="doc-body"><p>' + escape(doc.detail || doc.description) + '</p><pre class="code-block">' + escape(doc.code) + '</pre><p class="doc-limit">' + escape(doc.limit || '') + '</p><button class="secondary-button doc-run" data-doc-copy="' + index + '">' + icon('code') + '创建示例脚本</button></div></article>').join('') + '</div><div class="notice" style="margin-top:19px"><strong>当前不支持</strong><br>Siri、iCloud、照片图库、日历、定位与 iOS 系统控件；桌面小组件暂不定时运行脚本。需要更新内容时，请重新运行并固定小组件。</div><a class="source-link" href="https://docs.scriptable.app/" target="_blank" rel="noopener noreferrer">原版 Scriptable 文档' + icon('external') + '</a></section>';
     const notices = main.querySelectorAll('.notice');
-    if (notices[0]) notices[0].innerHTML = '<strong>脚本 API 与 Android 原生能力</strong><br>离线查阅示例与使用方法。各项说明列出实际支持范围、所需权限与平台差异。';
+    if (notices[0]) notices[0].hidden = true;
     if (notices[1]) notices[1].innerHTML = '<strong>跨平台适配</strong><br>系统交互遵循 Android；图标使用原创或开源替代，云文件通过系统文件选择器连接目录。桌面组件、权限和后台运行以设备中的实际设置为准。';
     if (notices[0]) notices[0].insertAdjacentHTML('beforebegin', '<label class="search-wrap docs-search">' + icon('search') + '<input id="doc-search" type="search" placeholder="搜索 API，例如 DrawContext" aria-label="搜索 API 文档"></label>');
     const search = document.getElementById('doc-search');
@@ -174,31 +194,46 @@
     });
   }
   function renderSettings() {
-    main.innerHTML = '<section class="page settings-page">' + top('设置', '让这个小工具，更像你的。') + '<p class="settings-title">APPEARANCE · 外观</p><div class="settings-group"><div class="settings-row">' + icon('sun') + '<span class="settings-row-label">主题<small>选择你的工作空间配色</small></span><select id="theme-setting" aria-label="主题"><option value="auto">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></div><div class="settings-row">' + icon('font') + '<span class="settings-row-label">编辑器字号<small>舒适阅读，专注编写</small></span><select id="font-setting" aria-label="编辑器字号">' + [11, 12, 13, 14, 15, 16, 18, 20].map(size => '<option value="' + size + '">' + size + ' px</option>').join('') + '</select></div></div><p class="settings-title">YOUR SCRIPTS · 脚本</p><div class="settings-group"><div class="settings-row">' + icon('download') + '<span class="settings-row-label">导入 JavaScript<small>从本地 .js 文件创建一个新脚本</small></span><button id="settings-import">导入</button></div><div class="settings-row">' + icon('folder') + '<span class="settings-row-label">本地保存<small>脚本会自动保存在此设备；导出文件可备份</small></span><span class="pill">' + state.scripts.length + ' 个</span></div></div><p class="settings-title">ABOUT · 关于</p><div class="about-box"><span class="brand-mark">' + icon('code') + '</span><h3>Scriptable Android</h3><p>用 JavaScript 构建属于你的日常工具。<br>受 Scriptable 启发的 Android 独立实现，<br>与原版开发者无关联。</p><div class="about-version">0.1.0 · ANDROID EDITION</div></div><p class="small-note">支持脚本编辑、隔离执行、网络请求、本地文件、弹窗、预览与桌面小组件。浏览器预览中的系统能力受限，安装 Android 应用后可使用原生能力。</p><button id="show-limits" class="text-button" style="margin:10px auto">查看支持范围' + icon('arrow') + '</button></section>';
-    const about = main.querySelector('.about-box');
-    if (about) {
-      about.previousElementSibling.insertAdjacentHTML('beforebegin', '<p class="settings-title">AUTOMATION · 自动化</p><div class="settings-group"><div class="settings-row">' + icon('widget') + '<span class="settings-row-label">刷新桌面小组件<small>运行已配置的组件脚本，更新主屏幕内容</small></span><button id="widget-refresh">刷新</button></div><div class="settings-row">' + icon('clock') + '<span class="settings-row-label">定时与后台运行<small>打开系统定时权限，管理后台刷新</small></span><button id="alarm-settings">设置</button></div></div><p class="settings-title">CLOUD · 云端与备份</p><div class="settings-group"><div class="settings-row">' + icon('cloud') + '<span class="settings-row-label">连接云目录<small>通过 Android 文件选择器连接云盘或本地文件夹</small></span><button id="cloud-connect">连接</button></div><div class="settings-row">' + icon('sync') + '<span class="settings-row-label">立即同步<small>同步已连接目录与应用中的文件副本</small></span><button id="cloud-sync">同步</button></div></div>');
-      about.querySelector('.about-version').textContent = '0.2.1 · ANDROID EDITION';
-      about.querySelector('.brand-mark').innerHTML = '<img src="brand/app-icon-v2.png" width="62" height="62" alt="Scriptable Android 图标" decoding="async">';
-    }
-    for (const [id, action, success] of [['cloud-connect', 'cloud.configure', '云盘设置已更新'], ['cloud-sync', 'cloud.sync', '同步完成'], ['widget-refresh', 'widget.refresh', '小组件已刷新'], ['alarm-settings', 'alarm.settings', '已打开系统定时设置']]) {
-      const button = document.getElementById(id); if (!button) continue;
+    const row = (symbol, label, detail, control) => '<div class="settings-row">' + icon(symbol) + '<span class="settings-row-label">' + label + (detail ? '<small>' + detail + '</small>' : '') + '</span>' + control + '</div>';
+    main.innerHTML = '<section class="page settings-page">' + top('设置') +
+      '<div class="settings-group">' +
+      row('sun', '主题', '', '<select id="theme-setting" aria-label="主题"><option value="auto">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select>') +
+      row('font', '编辑器字号', '', '<select id="font-setting" aria-label="编辑器字号">' + [11,12,13,14,15,16,18,20].map(n => '<option value="' + n + '">' + n + ' px</option>').join('') + '</select>') +
+      row('code', '智能补全', '输入时提示 API 和变量', '<input id="completion-setting" class="setting-switch" type="checkbox" role="switch" aria-label="智能补全">') + '</div>' +
+      '<div class="settings-group">' +
+      row('clock', '自动化', '定时执行脚本，查看运行结果', '<button id="scheduled-scripts">管理</button>') +
+      row('widget', '桌面小组件', '更新已添加的小组件', '<button id="widget-refresh">刷新</button>') +
+      row('clock', '精确定时权限', '', '<button id="alarm-settings">设置</button>') + '</div>' +
+      '<div class="settings-group">' +
+      row('download', '导入脚本', '从设备选择 .js 文件', '<button id="settings-import">导入</button>') +
+      row('cloud', '云目录', '连接云盘或本地文件夹', '<button id="cloud-connect">连接</button>') +
+      row('sync', '同步文件', '', '<button id="cloud-sync">同步</button>') + '</div>' +
+      '<div class="settings-group">' +
+      row('book', '支持范围', '', '<button id="show-limits">查看</button>') +
+      row('download', '检查更新', '下载并安装最新版本', '<button id="check-update">检查</button>') +
+      row('code', '关于', '版本、来源与开源许可', '<button id="show-about">查看</button>') + '</div></section>';
+    for (const [id, action, success] of [['check-update','update.open',''], ['scheduled-scripts','automation.open',''], ['cloud-connect','cloud.configure','云目录已更新'], ['cloud-sync','cloud.sync','同步完成'], ['widget-refresh','widget.refresh','小组件已刷新'], ['alarm-settings','alarm.settings','已打开定时设置']]) {
+      const button = document.getElementById(id);
       button.onclick = async () => {
         if (!native()) return notify('安装 Android 应用后即可使用此功能');
         button.disabled = true;
-        try { const result = await hostCall(action, {}); if (!result?.cancelled) notify(result?.message || success); }
+        try { const result = await hostCall(action, {}); if (success && !result?.cancelled) notify(result?.message || success); }
         catch (error) { notify(error.message || '操作未完成，请重试'); }
         finally { button.disabled = false; }
       };
     }
     document.getElementById('theme-setting').value = state.settings.theme;
     document.getElementById('font-setting').value = String(state.settings.fontSize);
-    const appearance = main.querySelector('.settings-group');
-    if (appearance) { appearance.insertAdjacentHTML('beforeend', '<div class="settings-row">' + icon('code') + '<label class="settings-row-label" for="completion-setting">智能补全<small>根据 API 与简单变量类型提示，方向键选择后按回车插入</small></label><input id="completion-setting" class="setting-switch" type="checkbox" role="switch"></div>'); const toggle = document.getElementById('completion-setting'); toggle.checked = completionEnabled; toggle.onchange = () => { completionEnabled = toggle.checked; try { localStorage.setItem('scriptable-editor-completion-v2', completionEnabled ? 'on' : 'off'); } catch (_) {} if (!completionEnabled) hideCompletion(); }; }
-    document.getElementById('theme-setting').onchange = event => setSettings({ theme: event.target.value });
-    document.getElementById('font-setting').onchange = event => setSettings({ fontSize: Number(event.target.value) });
+    const toggle = document.getElementById('completion-setting'); toggle.checked = completionEnabled;
+    toggle.onchange = () => { completionEnabled = toggle.checked; try { localStorage.setItem('scriptable-editor-completion-v2', completionEnabled ? 'on' : 'off'); } catch (_) {} if (!completionEnabled) hideCompletion(); };
+    document.getElementById('theme-setting').onchange = event => setSettings({theme:event.target.value});
+    document.getElementById('font-setting').onchange = event => setSettings({fontSize:Number(event.target.value)});
     document.getElementById('settings-import').onclick = importScript;
     document.getElementById('show-limits').onclick = () => navigate('docs');
+    document.getElementById('show-about').onclick = () => {
+      showModal('关于', '<p class="modal-copy">Scriptable Android 社区版<br>0.2.2-dev<br><br>由 awesome-sean 基于 EdenleeGitHub/scriptable-android v0.2.1 修改，非上游官方发行版。<br>保留上游及第三方开源许可。</p>', '<button id="open-licenses" class="secondary-button">开源许可</button>');
+      document.getElementById('open-licenses').onclick = () => { if (!native()) return notify('安装 Android 应用后可查看随包许可；源码中的 LICENSE 也可查阅'); hostCall('licenses.open',{}).catch(error => notify(error.message)); };
+    };
   }
   function setSettings(change) {
     try {

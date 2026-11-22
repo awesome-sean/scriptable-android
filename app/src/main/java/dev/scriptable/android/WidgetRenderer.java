@@ -212,12 +212,27 @@ final class WidgetRenderer {
                 if ("text".equals(child.node.optString("type")) || "date".equals(child.node.optString("type"))) { cross = Math.min(height, textLayout(child.node, content(child.node), textPaint(child.node), Math.max(1, Math.round(length)), Math.round(height)).getHeight()); dy = "bottom".equals(align) ? height - cross : "center".equals(align) ? (height - cross) / 2 : 0; }
                 draw(child, x + offset, y + dy, length, spacer ? height : cross, depth + 1);
             } else {
-                float cross = "text".equals(child.node.optString("type")) || "date".equals(child.node.optString("type")) ? width : Math.min(width, child.width);
+                float cross = "text".equals(child.node.optString("type")) || "date".equals(child.node.optString("type")) ? width : (fillsWidth(child.node) ? width : Math.min(width, child.width));
                 String align = child.node.optString("alignment"); float dx = "right".equals(align) ? width - cross : "center".equals(align) ? (width - cross) / 2 : 0;
                 draw(child, x + dx, y + offset, spacer ? width : cross, length, depth + 1);
             }
             offset += length + spacing;
         }
+    }
+    // A row containing a flexible spacer must receive its parent's width.
+    // Otherwise its measured intrinsic width consumes the spacer before layout.
+    private static boolean fillsWidth(JSONObject node) {
+        JSONObject size=node.optJSONObject("size");
+        if(size!=null && number(size,"width",0)>0)return false;
+        JSONArray children=node.optJSONArray("children");
+        if(children==null)return false;
+        for(int i=0;i<children.length();i++) {
+            JSONObject child=children.optJSONObject(i);
+            if(child==null)continue;
+            if("horizontal".equals(node.optString("layout")) && "spacer".equals(child.optString("type")) && !child.has("length"))return true;
+            if(!"horizontal".equals(node.optString("layout")) && fillsWidth(child))return true;
+        }
+        return false;
     }
     private void background(JSONObject node, RectF rect, float corner) {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG); boolean fill = NativeJson.hasValue(node,"backgroundColor"); paint.setColor(color(NativeJson.string(node,"backgroundColor", ""), android.graphics.Color.TRANSPARENT));
